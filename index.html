@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:#f1efea;color:#1f1e1c;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-thumb{background:#d6d2c8;border-radius:7px;border:3px solid #f1efea}
+::-webkit-scrollbar-thumb:hover{background:#c5c0b4}
+input,select,textarea,button{font-family:inherit;color:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent,#3a5a8c);outline-offset:-1px;border-color:transparent}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+html[data-theme="dark"]{background:#15141a}
+html[data-theme="dark"] body{background:#15141a}
+html[data-theme="dark"] #crm-root{filter:invert(0.92) hue-rotate(180deg)}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb{background:#3a3833;border-color:#15141a}
+html[data-theme="dark"] img,html[data-theme="dark"] [data-no-invert]{filter:invert(1) hue-rotate(180deg)}
+</style>
+<script src="crm-seed.js"></script>
+<script src="workflow-templates.js"></script>
+</helmet>
+<div id="crm-root" style="--accent: {{ accentVar }};display:flex;min-height:100vh;width:100%">
+
+  <aside style="width:238px;flex:none;background:#fbfaf7;border-right:1px solid #e6e3dc;padding:20px 16px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh">
+    <div style="display:flex;align-items:center;gap:11px;padding:4px 8px 18px">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--accent,#3a5a8c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;flex:none">B</div>
+      <div style="line-height:1.15">
+        <div style="font-weight:600;font-size:14px">Book of Business</div>
+        <div style="font-size:11px;color:#9a968e;font-family:'IBM Plex Mono',monospace">Benefit Manager CRM</div>
+      </div>
+    </div>
+
+    <button onClick="{{ goDashboard }}" style="{{ navDashStyle }}">
+      <span style="width:7px;height:7px;border-radius:2px;background:currentColor;opacity:.7;flex:none"></span>Dashboard
+    </button>
+    <button onClick="{{ goGroups }}" style="{{ navGroupsStyle }}">
+      <span style="width:7px;height:7px;border-radius:2px;background:currentColor;opacity:.7;flex:none"></span>All Groups
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:.7">{{ totalCount }}</span>
+    </button>
+    <button onClick="{{ goTemplates }}" style="{{ navTplStyle }}">
+      <span style="width:7px;height:7px;border-radius:2px;background:currentColor;opacity:.7;flex:none"></span>Workflow templates
+    </button>
+
+    <div style="height:1px;background:#e6e3dc;margin:14px 4px"></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#b3afa6;font-family:'IBM Plex Mono',monospace;padding:0 8px 8px">Pipeline</div>
+
+    <button onClick="{{ goReach }}" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:none;background:transparent;border-radius:8px;cursor:pointer;width:100%;text-align:left;font-size:12.5px;color:#5a574f" style-hover="background:#f3f1ea">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.55 0.16 28);flex:none"></span>Reach out
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600">{{ miniReach }}</span>
+    </button>
+    <button onClick="{{ goOeNow }}" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:none;background:transparent;border-radius:8px;cursor:pointer;width:100%;text-align:left;font-size:12.5px;color:#5a574f" style-hover="background:#f3f1ea">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.6 0.13 65);flex:none"></span>Open enrollment
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600">{{ miniOeNow }}</span>
+    </button>
+    <button onClick="{{ goOe90 }}" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:none;background:transparent;border-radius:8px;cursor:pointer;width:100%;text-align:left;font-size:12.5px;color:#5a574f" style-hover="background:#f3f1ea">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.13 75);flex:none"></span>90 days out
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600">{{ miniOe90 }}</span>
+    </button>
+    <button onClick="{{ goTransition }}" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:none;background:transparent;border-radius:8px;cursor:pointer;width:100%;text-align:left;font-size:12.5px;color:#5a574f" style-hover="background:#f3f1ea">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--accent,#3a5a8c);flex:none"></span>In transition
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600">{{ miniTransition }}</span>
+    </button>
+    <button onClick="{{ goFollow }}" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:none;background:transparent;border-radius:8px;cursor:pointer;width:100%;text-align:left;font-size:12.5px;color:#5a574f" style-hover="background:#f3f1ea">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.5 0.1 200);flex:none"></span>Follow-ups
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600">{{ miniFollow }}</span>
+    </button>
+    <button onClick="{{ goFlagged }}" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:none;background:transparent;border-radius:8px;cursor:pointer;width:100%;text-align:left;font-size:12.5px;color:#5a574f" style-hover="background:#f3f1ea">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.13 75);flex:none"></span>Flagged
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:600">{{ miniFlagged }}</span>
+    </button>
+
+    <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 8px 2px;border-top:1px solid #e6e3dc">
+      <div style="width:30px;height:30px;border-radius:50%;background:#e6e1d6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#6f6c66;flex:none">{{ managerInitials }}</div>
+      <div style="line-height:1.2">
+        <div style="font-size:13px;font-weight:600">{{ managerName }}</div>
+        <div style="font-size:11px;color:#9a968e">Benefit Manager</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;height:100vh;overflow-y:auto">
+    <header style="position:sticky;top:0;z-index:5;background:rgba(241,239,234,0.86);backdrop-filter:blur(10px);border-bottom:1px solid #e6e3dc;padding:15px 28px;display:flex;align-items:center;gap:18px">
+      <div style="flex:1;min-width:0">
+        <h1 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em">{{ viewTitle }}</h1>
+        <div style="font-size:12.5px;color:#9a968e;margin-top:1px">{{ viewSubtitle }}</div>
+      </div>
+      <div style="position:relative;width:260px;flex:none">
+        <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search groups or BM…" style="width:100%;padding:9px 12px 9px 32px;border:1px solid #ddd9d0;border-radius:9px;font-size:13px;background:#fff" />
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#b3afa6;font-size:13px">⌕</span>
+      </div>
+      <button onClick="{{ toggleAddGroup }}" style="flex:none;padding:0 15px;height:34px;border-radius:9px;border:none;background:var(--accent,#3a5a8c);color:#fff;cursor:pointer;font-size:12.5px;font-weight:600">+ New group</button>
+      <button onClick="{{ toggleTheme }}" title="Toggle light / dark" style="flex:none;width:34px;height:34px;border-radius:9px;border:1px solid #ddd9d0;background:#fff;cursor:pointer;font-size:15px;color:#6f6c66;display:flex;align-items:center;justify-content:center" style-hover="border-color:#c5c0b4">{{ themeIcon }}</button>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a968e;text-align:right;flex:none;line-height:1.3">
+        <div style="color:#b3afa6">Today</div>{{ todayText }}
+      </div>
+    </header>
+
+    <div style="padding:24px 28px 64px;animation:fadein .28s ease">
+
+      <!-- ============ DASHBOARD ============ -->
+      <sc-if value="{{ dashReady }}" hint-placeholder-val="{{ true }}">
+
+        <div style="font-size:14.5px;color:#6f6c66;margin:-2px 0 18px;text-wrap:pretty">{{ dashSummary }}</div>
+
+        <!-- metric strip -->
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:22px">
+          <button data-filter="reachout" onClick="{{ setFilter }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" style-hover="border-color:#d4cfc4;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+            <span style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.55 0.16 28);flex:none"></span>Reach out</span>
+            <span style="font-size:27px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;color:oklch(0.52 0.17 28)">{{ kReach }}</span>
+          </button>
+          <button data-filter="oenow" onClick="{{ setFilter }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" style-hover="border-color:#d4cfc4;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+            <span style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.6 0.13 65);flex:none"></span>On OE now</span>
+            <span style="font-size:27px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;color:oklch(0.55 0.13 65)">{{ kOeNow }}</span>
+          </button>
+          <button data-filter="oe90" onClick="{{ setFilter }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" style-hover="border-color:#d4cfc4;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+            <span style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.13 75);flex:none"></span>90 days out</span>
+            <span style="font-size:27px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;color:oklch(0.62 0.13 75)">{{ kOe90 }}</span>
+          </button>
+          <button data-filter="followup" onClick="{{ setFilter }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" style-hover="border-color:#d4cfc4;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+            <span style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.5 0.1 200);flex:none"></span>Follow-ups</span>
+            <span style="font-size:27px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;color:oklch(0.5 0.1 200)">{{ kFollowups }}</span>
+          </button>
+          <button data-filter="priority" onClick="{{ setFilter }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" style-hover="border-color:#d4cfc4;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+            <span style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.68 0.13 75);flex:none"></span>Flagged</span>
+            <span style="font-size:27px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;color:oklch(0.62 0.13 75)">{{ kFlagged }}</span>
+          </button>
+          <button data-filter="all" onClick="{{ setFilter }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px" style-hover="border-color:#d4cfc4;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+            <span style="display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace"><span style="width:7px;height:7px;border-radius:50%;background:#c5c0b4;flex:none"></span>Total book</span>
+            <span style="font-size:27px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;color:#3a3833">{{ kTotal }}</span>
+          </button>
+        </div>
+
+        <!-- Reach out (left, primary) + OE pipeline / follow-ups (right rail) -->
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start">
+
+          <section style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:9px;padding:15px 18px;border-bottom:1px solid #f0eee8">
+              <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.55 0.16 28);flex:none"></span>
+              <h2 style="margin:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em">Reach out to</h2>
+              <span style="font-size:11.5px;color:#9a968e">auto-prioritised · work top-down</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a968e">{{ reachCount }}</span>
+            </div>
+            <sc-if value="{{ hasReach }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <sc-for list="{{ reachOut }}" as="q" hint-placeholder-count="8">
+                  <div data-id="{{ q.id }}" onClick="{{ openGroup }}" style="display:flex;align-items:stretch;border-top:1px solid #f4f2ec;cursor:pointer" style-hover="background:#faf9f6">
+                    <span style="{{ q.barStyle }}"></span>
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px 16px 12px 13px">
+                      <button data-id="{{ q.id }}" onClick="{{ togglePriority }}" style="{{ q.starStyle }}">★</button>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.group }}</div>
+                        <div style="font-size:12px;color:#8a877f;margin:2px 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.actionDetail }}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px">
+                          <sc-for list="{{ q.reasons }}" as="r" hint-placeholder-count="2">
+                            <span style="{{ r.style }};display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;font-family:'IBM Plex Mono',monospace">{{ r.label }}</span>
+                          </sc-for>
+                        </div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none">
+                        <span style="{{ q.dueStyle }};font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;white-space:nowrap">{{ q.dueText }}</span>
+                        <button data-id="{{ q.id }}" onClick="{{ snoozeReminder }}" title="Snooze 7 days" style="border:1px solid #e6e3dc;background:#fff;border-radius:6px;padding:3px 9px;font-size:11px;color:#9a968e;cursor:pointer;font-family:'IBM Plex Mono',monospace" style-hover="border-color:#c5c0b4;color:#6f6c66">Snooze</button>
+                      </div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ reachEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:40px;text-align:center;color:#9a968e;font-size:13px">Nobody to chase right now — you're all caught up. ✓</div>
+            </sc-if>
+          </section>
+
+          <!-- RIGHT RAIL -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+
+            <section style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid #f0eee8">
+                <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.6 0.13 65);flex:none"></span>
+                <h2 style="margin:0;font-size:13.5px;font-weight:600">On open enrollment</h2>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a968e">{{ oeNowCount }}</span>
+              </div>
+              <sc-if value="{{ hasOeNow }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <sc-for list="{{ oeNowList }}" as="u" hint-placeholder-count="3">
+                    <div data-id="{{ u.id }}" onClick="{{ openGroup }}" style="display:flex;align-items:center;gap:11px;padding:11px 16px;border-top:1px solid #f4f2ec;cursor:pointer" style-hover="background:#faf9f6">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#8a877f;background:#f3f1ea;border-radius:6px;padding:5px 0;flex:none;width:42px;text-align:center">{{ u.oeMonthChip }}</span>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.group }}</div>
+                        <div style="font-size:11px;color:#9a968e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.oeDateText }}</div>
+                      </div>
+                      <span style="color:oklch(0.55 0.13 65);font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;flex:none">{{ u.oeSubText }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noOeNow }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:20px 16px;text-align:center;color:#b3afa6;font-size:12px;line-height:1.6">No groups in open enrollment now.<sc-if value="{{ hasOeNextUp }}" hint-placeholder-val="{{ false }}"><br><span style="font-size:11px;color:#9a968e">Next — {{ oeNextUpText }}</span></sc-if></div>
+              </sc-if>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid #f0eee8">
+                <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.68 0.13 75);flex:none"></span>
+                <h2 style="margin:0;font-size:13.5px;font-weight:600">90 days out</h2>
+                <span style="font-size:11px;color:#9a968e">start prep</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a968e">{{ oe90Count }}</span>
+              </div>
+              <sc-if value="{{ hasOe90 }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <sc-for list="{{ oe90List }}" as="u" hint-placeholder-count="3">
+                    <div data-id="{{ u.id }}" onClick="{{ openGroup }}" style="display:flex;align-items:center;gap:11px;padding:11px 16px;border-top:1px solid #f4f2ec;cursor:pointer" style-hover="background:#faf9f6">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#8a877f;background:#f3f1ea;border-radius:6px;padding:5px 0;flex:none;width:42px;text-align:center">{{ u.oeMonthChip }}</span>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.group }}</div>
+                        <div style="font-size:11px;color:#9a968e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.oeDateText }}</div>
+                      </div>
+                      <span style="color:oklch(0.62 0.13 75);font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;flex:none">{{ u.oeSubText }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noOe90 }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:20px 16px;text-align:center;color:#b3afa6;font-size:12px">Nothing within 90 days yet.</div>
+              </sc-if>
+            </section>
+
+            <section style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:9px;padding:14px 16px;border-bottom:1px solid #f0eee8">
+                <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.5 0.1 200);flex:none"></span>
+                <h2 style="margin:0;font-size:13.5px;font-weight:600">Follow-ups</h2>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a968e">{{ followUpCount }}</span>
+              </div>
+              <sc-if value="{{ hasFollowUps }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <sc-for list="{{ followUpsList }}" as="f" hint-placeholder-count="3">
+                    <div data-id="{{ f.id }}" onClick="{{ openGroup }}" style="padding:11px 16px;border-top:1px solid #f4f2ec;cursor:pointer;display:flex;align-items:center;gap:10px" style-hover="background:#faf9f6">
+                      <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.group }}</div>
+                        <div style="font-size:11px;color:#9a968e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.followUpNote }}</div>
+                      </div>
+                      <span style="{{ f.followUpStyle }};font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;flex:none">{{ f.followUpText }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noFollowUps }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:20px 16px;text-align:center;color:#b3afa6;font-size:12px;line-height:1.6">No follow-ups scheduled.</div>
+              </sc-if>
+            </section>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasSnoozed }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+            <button onClick="{{ toggleSnoozed }}" style="width:100%;display:flex;align-items:center;gap:9px;padding:14px 18px;border:none;background:transparent;cursor:pointer;text-align:left" style-hover="background:#faf9f6">
+              <span style="width:8px;height:8px;border-radius:50%;background:#c5c0b4;flex:none"></span>
+              <h2 style="margin:0;font-size:14px;font-weight:600;color:#6f6c66">Snoozed</h2>
+              <span style="font-size:11.5px;color:#9a968e">hidden from &ldquo;Reach out to&rdquo; until their snooze ends</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9a968e">{{ kSnoozed }} &middot; show/hide</span>
+            </button>
+            <sc-if value="{{ showSnoozed }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <sc-for list="{{ snoozedList }}" as="z" hint-placeholder-count="2">
+                  <div data-id="{{ z.id }}" onClick="{{ openGroup }}" style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid #f4f2ec;cursor:pointer" style-hover="background:#faf9f6">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ z.group }}</div>
+                      <div style="font-size:11.5px;color:#9a968e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ z.actionDetail }}</div>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#b3afa6;flex:none">until {{ z.snoozedUntilText }}</span>
+                    <button data-id="{{ z.id }}" onClick="{{ unsnooze }}" title="Undo snooze" style="border:1px solid #e6e3dc;background:#fff;border-radius:6px;padding:4px 11px;font-size:11.5px;color:#6f6c66;cursor:pointer;font-family:'IBM Plex Mono',monospace;flex:none" style-hover="border-color:#c5c0b4">Undo</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <!-- ============ GROUPS LIST ============ -->
+      <sc-if value="{{ groupsReady }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <sc-for list="{{ chips }}" as="c" hint-placeholder-count="6">
+            <button data-filter="{{ c.key }}" onClick="{{ setListFilter }}" style="{{ c.style }}">{{ c.label }} <span style="font-family:'IBM Plex Mono',monospace;opacity:.7">{{ c.count }}</span></button>
+          </sc-for>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:#9a968e">Sort</span>
+            <select value="{{ sort }}" onChange="{{ setSort }}" style="padding:7px 9px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;cursor:pointer">
+              <option value="priority">Priority</option>
+              <option value="name">Name (A–Z)</option>
+              <option value="renewal">Renewal date</option>
+              <option value="employees">Employees</option>
+            </select>
+            <button onClick="{{ toggleAddGroup }}" style="padding:8px 14px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer">+ New group</button>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:2.4fr 1.2fr 1.4fr 1.5fr 1.3fr 1.2fr 40px;gap:14px;padding:11px 18px;border-bottom:1px solid #ece9e1;background:#faf9f6;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#9a968e;font-family:'IBM Plex Mono',monospace">
+            <span>Group</span><span>From BM</span><span>Open enrollment</span><span>Workflows</span><span>Next contact</span><span>Status</span><span></span>
+          </div>
+          <sc-if value="{{ hasGroups }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <sc-for list="{{ groupsFiltered }}" as="v" hint-placeholder-count="10">
+                <div data-id="{{ v.id }}" onClick="{{ openGroup }}" style="display:grid;grid-template-columns:2.4fr 1.2fr 1.4fr 1.5fr 1.3fr 1.2fr 40px;gap:14px;padding:14px 18px;border-top:1px solid #f4f2ec;cursor:pointer;align-items:center" style-hover="background:#faf9f6">
+                  <div style="min-width:0">
+                    <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.group }}</div>
+                    <div style="font-size:11px;color:#b3afa6;font-family:'IBM Plex Mono',monospace">{{ v.employeesText }}</div>
+                  </div>
+                  <span style="font-size:12.5px;color:#6f6c66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.currentBM }}</span>
+                  <div style="min-width:0">
+                    <div style="{{ v.renewalCellStyle }};font-size:12.5px;font-weight:500">{{ v.renewalText }}</div>
+                    <div style="font-size:11px;color:#b3afa6;font-family:'IBM Plex Mono',monospace">{{ v.renewalSub }}</div>
+                  </div>
+                  <div style="min-width:0">
+                    <div style="height:5px;background:#efece4;border-radius:3px;overflow:hidden;margin-bottom:4px"><div style="{{ v.pctStyle }}"></div></div>
+                    <div style="font-size:11px;color:#9a968e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.transitionStep }}</div>
+                  </div>
+                  <div style="min-width:0">
+                    <div style="{{ v.checkInStyle }};font-size:12px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.nextCheckInText }}</div>
+                    <div style="font-size:11px;color:#b3afa6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.cadenceLabel }}</div>
+                  </div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;min-width:0"><span style="{{ v.statusDotStyle }}"></span><span style="{{ v.statusTextStyle }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.statusLabel }}</span></span>
+                  <button data-id="{{ v.id }}" onClick="{{ togglePriority }}" style="{{ v.starStyle }}">★</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noGroups }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:44px;text-align:center;color:#9a968e;font-size:13px">No groups match this filter.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ============ TEMPLATES ============ -->
+      <sc-if value="{{ templatesReady }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="font-size:13.5px;color:#6f6c66;text-wrap:pretty;flex:1">These are the checklists you attach to a group. Edit them here, or build a custom one — changes apply to <em>new</em> attachments and leave existing group workflows untouched.</div>
+            <button onClick="{{ tplReset }}" style="flex:none;padding:8px 13px;border:1px solid #e6e3dc;border-radius:8px;background:#fff;color:#6f6c66;font-size:12.5px;font-weight:500;cursor:pointer">Reset to defaults</button>
+            <button onClick="{{ tplAddCustom }}" style="flex:none;padding:8px 14px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer">+ New custom</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ templatesVM }}" as="tpl" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid #f0eee8">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:15px;font-weight:600">{{ tpl.title }}</div>
+                    <div style="font-size:11.5px;color:#9a968e;font-family:'IBM Plex Mono',monospace;margin-top:2px">{{ tpl.taskTotal }} tasks · {{ tpl.anchorText }}</div>
+                  </div>
+                  <button data-tpl="{{ tpl.id }}" onClick="{{ editTemplate }}" style="flex:none;padding:7px 14px;border:1px solid var(--accent,#3a5a8c);border-radius:8px;background:#fff;color:var(--accent,#3a5a8c);font-size:12.5px;font-weight:600;cursor:pointer">{{ tpl.editLabel }}</button>
+                </div>
+                <sc-if value="{{ tpl.editing }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:16px 18px">
+                    <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px;max-width:340px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Template name</span><input value="{{ tpl.title }}" data-tpl="{{ tpl.id }}" onInput="{{ tplRenameTitle }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                    <sc-for list="{{ tpl.sections }}" as="sec" hint-placeholder-count="2">
+                      <div style="margin-bottom:14px;border:1px solid #f0eee8;border-radius:10px;padding:12px 13px">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                          <input value="{{ sec.name }}" data-tpl="{{ sec.tpl }}" data-sec="{{ sec.idx }}" onInput="{{ tplSectionName }}" style="flex:1;max-width:240px;padding:6px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;font-weight:600;background:#fff" />
+                          <button data-tpl="{{ sec.tpl }}" data-sec="{{ sec.idx }}" onClick="{{ tplRemoveSection }}" style="margin-left:auto;border:none;background:transparent;color:#c5c0b4;cursor:pointer;font-size:11.5px">remove section</button>
+                        </div>
+                        <sc-for list="{{ sec.tasks }}" as="tk" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                            <input value="{{ tk.label }}" data-tpl="{{ tk.tpl }}" data-sec="{{ tk.sec }}" data-task="{{ tk.idx }}" data-field="label" onInput="{{ tplTaskField }}" style="flex:1;min-width:0;padding:6px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;background:#fff" />
+                            <sc-if value="{{ tpl.showOffset }}" hint-placeholder-val="{{ false }}">
+                              <div style="display:flex;align-items:center;gap:5px;flex:none"><input value="{{ tk.offset }}" data-tpl="{{ tk.tpl }}" data-sec="{{ tk.sec }}" data-task="{{ tk.idx }}" data-field="offset" type="number" placeholder="days" title="Days before anchor date" style="width:64px;padding:6px 8px;border:1px solid #ddd9d0;border-radius:7px;font-size:12px;background:#fff" /><span style="font-size:10.5px;color:#b3afa6;font-family:'IBM Plex Mono',monospace">d before</span></div>
+                            </sc-if>
+                            <button data-tpl="{{ tk.tpl }}" data-sec="{{ tk.sec }}" data-task="{{ tk.idx }}" onClick="{{ tplRemoveTask }}" style="border:none;background:transparent;color:#c5c0b4;cursor:pointer;font-size:15px;line-height:1;flex:none">×</button>
+                          </div>
+                        </sc-for>
+                        <button data-tpl="{{ sec.tpl }}" data-sec="{{ sec.idx }}" onClick="{{ tplAddTask }}" style="border:none;background:transparent;color:var(--accent,#3a5a8c);cursor:pointer;font-size:12px;font-weight:600;margin-top:2px">+ add task</button>
+                      </div>
+                    </sc-for>
+                    <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+                      <button data-tpl="{{ tpl.id }}" onClick="{{ tplAddSection }}" style="padding:7px 13px;border:1px solid #ddd9d0;border-radius:8px;background:#fff;color:#6f6c66;font-size:12px;font-weight:600;cursor:pointer">+ add section</button>
+                      <sc-if value="{{ tpl.builtin }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;color:#b3afa6;font-family:'IBM Plex Mono',monospace">built-in template</span></sc-if>
+                      <sc-if value="{{ tpl.custom }}" hint-placeholder-val="{{ false }}"><button data-tpl="{{ tpl.id }}" onClick="{{ tplDelete }}" style="margin-left:auto;border:1px solid #e6e3dc;background:#fff;border-radius:8px;padding:7px 13px;font-size:12px;color:oklch(0.55 0.16 28);cursor:pointer">Delete template</button></sc-if>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ DETAIL ============ -->
+      <sc-if value="{{ detailReady }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <button onClick="{{ back }}" style="display:inline-flex;align-items:center;gap:6px;border:none;background:transparent;cursor:pointer;font-size:13px;color:#6f6c66;padding:0;margin-bottom:14px">‹ Back</button>
+
+          <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:20px 22px;display:flex;align-items:flex-start;gap:18px;margin-bottom:16px">
+            <button data-id="{{ sg.id }}" onClick="{{ togglePriority }}" style="{{ sg.starStyleLg }}">★</button>
+            <div style="flex:1;min-width:0">
+              <h2 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em">{{ sg.group }}</h2>
+              <div style="font-size:13px;color:#9a968e;margin-top:3px">{{ sg.headerRel }} · Renews <strong style="color:#6f6c66;font-weight:600">{{ sg.renewalText }}</strong> <span style="{{ sg.renewalCellStyle }}">{{ sg.renewalSub }}</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex:none">
+              <span style="font-size:11px;color:#9a968e;font-family:'IBM Plex Mono',monospace">STATUS</span>
+              <select value="{{ sg.status }}" data-field="status" onChange="{{ handleField }}" style="padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;font-weight:600;background:#fff;cursor:pointer">
+                <option value="transition">In transition</option>
+                <option value="onboarding">Onboarding</option>
+                <option value="active">Active client</option>
+                <option value="open-enrollment">Open enrollment</option>
+                <option value="renewal">Renewal</option>
+                <option value="at-risk">At risk</option>
+                <option value="parked">Parked</option>
+              </select>
+            </div>
+          </div>
+
+          <sc-if value="{{ sg.hasWatchOuts }}" hint-placeholder-val="{{ false }}">
+            <div style="background:oklch(0.96 0.04 75);border:1px solid oklch(0.85 0.09 75);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;gap:13px;align-items:flex-start">
+              <span style="font-size:17px;line-height:1.3;flex:none">⚠</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:oklch(0.5 0.11 65);font-family:'IBM Plex Mono',monospace;margin-bottom:3px">Watch-out — keep this in mind</div>
+                <div style="font-size:13.5px;color:#5a574f;line-height:1.5;text-wrap:pretty">{{ sg.watchOuts }}</div>
+                <sc-if value="{{ sg.monitorMonthly }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+                    <span style="{{ sg.monitorBadgeStyle }};font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px">Monitored monthly · last {{ sg.lastMonitorText }}</span>
+                    <button onClick="{{ logMonitor }}" style="border:1px solid oklch(0.8 0.09 75);background:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;color:oklch(0.45 0.11 65);cursor:pointer">✓ Log monitor check</button>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start">
+            <!-- LEFT -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                  <h3 style="margin:0;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Workflows</h3>
+                  <select onChange="{{ attachWorkflow }}" style="margin-left:auto;padding:7px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;cursor:pointer">
+                    <option value="">+ Attach workflow…</option>
+                    <sc-for list="{{ sg.tplOptions }}" as="o" hint-placeholder-count="3">
+                      <option value="{{ o.id }}">{{ o.title }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+                <sc-if value="{{ sg.renewalStartSuggest }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:oklch(0.96 0.04 75);border:1px solid oklch(0.86 0.08 75);border-radius:9px;padding:9px 13px;font-size:12.5px;color:oklch(0.45 0.11 65);margin:6px 0 4px">Renewal is within 90 days — attach the <strong>Renewal</strong> workflow to auto-schedule the timeline.</div>
+                </sc-if>
+
+                <sc-if value="{{ sg.hasWorkflows }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px">
+                    <sc-for list="{{ sg.workflows }}" as="w" hint-placeholder-count="1">
+                      <div style="border:1px solid #ece9e1;border-radius:11px;overflow:hidden">
+                        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:#faf9f6;border-bottom:1px solid #f0eee8">
+                          <span style="font-weight:600;font-size:13.5px">{{ w.title }}</span>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9a968e">{{ w.countText }}</span>
+                          <div style="flex:1;max-width:120px;height:5px;background:#efece4;border-radius:3px;overflow:hidden"><div style="{{ w.pctStyle }}"></div></div>
+                          <button data-wf="{{ w.id }}" onClick="{{ removeWorkflow }}" title="Remove workflow" style="margin-left:auto;border:none;background:transparent;color:#c5c0b4;cursor:pointer;font-size:16px;line-height:1" style-hover="color:oklch(0.55 0.16 28)">×</button>
+                        </div>
+                        <div style="padding:6px 14px 12px">
+                          <sc-for list="{{ w.sections }}" as="sec" hint-placeholder-count="2">
+                            <div style="margin-top:10px">
+                              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                                <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#b3afa6;font-family:'IBM Plex Mono',monospace">{{ sec.name }}</span>
+                                <button data-wf="{{ sec.wf }}" data-sec="{{ sec.name }}" onClick="{{ addTask }}" style="margin-left:auto;border:none;background:transparent;color:var(--accent,#3a5a8c);cursor:pointer;font-size:11.5px;font-weight:600">+ task</button>
+                              </div>
+                              <sc-for list="{{ sec.tasks }}" as="t" hint-placeholder-count="3">
+                                <div style="border-top:1px solid #f4f2ec">
+                                  <div style="display:flex;align-items:center;gap:10px;padding:8px 2px">
+                                    <button data-wf="{{ t.wf }}" data-task="{{ t.id }}" onClick="{{ toggleTask }}" style="{{ t.checkStyle }}">{{ t.check }}</button>
+                                    <span style="{{ t.labelStyle }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.label }}</span>
+                                    <span style="{{ t.dueStyle }};margin-left:auto;flex:none">{{ t.dueText }}</span>
+                                    <button data-task="{{ t.id }}" onClick="{{ toggleTaskExpand }}" style="border:none;background:transparent;color:#9a968e;cursor:pointer;font-size:11px;font-family:'IBM Plex Mono',monospace;flex:none">{{ t.chev }}</button>
+                                  </div>
+                                  <sc-if value="{{ t.expanded }}" hint-placeholder-val="{{ false }}">
+                                    <div style="padding:4px 2px 12px 29px;display:grid;grid-template-columns:1fr 1fr;gap:9px">
+                                      <label style="display:flex;flex-direction:column;gap:4px;grid-column:span 2"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Task</span><input value="{{ t.label }}" data-wf="{{ t.wf }}" data-task="{{ t.id }}" data-field="label" onInput="{{ setTaskField }}" style="width:100%;padding:7px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;background:#fff" /></label>
+                                      <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Due</span><input value="{{ t.dueEdit }}" data-wf="{{ t.wf }}" data-task="{{ t.id }}" data-field="due" type="date" onInput="{{ setTaskField }}" style="width:100%;padding:7px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;background:#fff" /></label>
+                                      <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Assigned</span><input value="{{ t.assignedEdit }}" data-wf="{{ t.wf }}" data-task="{{ t.id }}" data-field="assigned" type="date" onInput="{{ setTaskField }}" style="width:100%;padding:7px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;background:#fff" /></label>
+                                      <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Reminder</span><input value="{{ t.reminderEdit }}" data-wf="{{ t.wf }}" data-task="{{ t.id }}" data-field="reminder" type="date" onInput="{{ setTaskField }}" style="width:100%;padding:7px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;background:#fff" /></label>
+                                      <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Completed</span><span style="padding:7px 0;font-size:12.5px;font-family:'IBM Plex Mono',monospace;color:#6f6c66">{{ t.completedText }}</span></div>
+                                      <label style="display:flex;flex-direction:column;gap:4px;grid-column:span 2"><span style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Note</span><textarea value="{{ t.noteEdit }}" data-wf="{{ t.wf }}" data-task="{{ t.id }}" data-field="note" onInput="{{ setTaskField }}" rows="2" style="width:100%;padding:7px 9px;border:1px solid #ddd9d0;border-radius:7px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                                      <div style="grid-column:span 2;display:flex;justify-content:flex-end"><button data-wf="{{ t.wf }}" data-task="{{ t.id }}" onClick="{{ removeTask }}" style="border:1px solid #e6e3dc;background:#fff;border-radius:7px;padding:5px 11px;font-size:11.5px;color:oklch(0.55 0.16 28);cursor:pointer">Remove task</button></div>
+                                    </div>
+                                  </sc-if>
+                                </div>
+                              </sc-for>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ sg.noWorkflows }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:18px 4px;text-align:center;color:#b3afa6;font-size:12.5px;line-height:1.6">No workflows attached yet.<br><span style="font-size:11.5px">Attach Open Enrollment, Renewal, or Transition above — or build your own under Workflow templates.</span></div>
+                </sc-if>
+              </div>
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <button data-sec="details" onClick="{{ toggleSection }}" style="width:100%;display:flex;align-items:center;gap:10px;border:none;background:transparent;cursor:pointer;padding:0;text-align:left">
+                  <h3 style="margin:0;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Group details, contact, NHO &amp; plans</h3>
+                  <span style="margin-left:auto;font-size:11.5px;color:#9a968e;font-family:'IBM Plex Mono',monospace">{{ sg.detailsToggleLabel }}</span>
+                </button>
+                <sc-if value="{{ detailsOpen }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top:16px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px 16px">
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Employees</span><input value="{{ sg.employeesEdit }}" data-field="employees" data-num="1" type="number" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">State</span><input value="{{ sg.stateEdit }}" data-field="state" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Platform</span>
+                    <select value="{{ sg.platformEdit }}" data-field="platform" onChange="{{ handleField }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+                      <option value="">—</option>
+                      <option value="Employee Navigator">Employee Navigator</option>
+                      <option value="Planstin Portals / Salesforce">Planstin Portals</option>
+                      <option value="Both">Both</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Participation</span><input value="{{ sg.participationEdit }}" data-field="participation" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Plan richness</span>
+                    <select value="{{ sg.planRichnessEdit }}" data-field="planRichness" onChange="{{ handleField }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+                      <option value="">—</option>
+                      <option value="Lean">Lean</option>
+                      <option value="Standard">Standard</option>
+                      <option value="Rich">Rich</option>
+                      <option value="Mixed">Mixed</option>
+                    </select>
+                  </label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Claims fund</span><input value="{{ sg.claimsFundEdit }}" data-field="claimsFund" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">FTE / eligible</span><input value="{{ sg.fteEdit }}" data-field="fte" data-num="1" type="number" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">On plans now</span><input value="{{ sg.activeOnPlansEdit }}" data-field="activeOnPlans" data-num="1" type="number" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Agent of record</span><input value="{{ sg.agentEdit }}" data-field="agent" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px;grid-column:span 2"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Salesforce link</span>
+                    <div style="display:flex;gap:7px">
+                      <input value="{{ sg.salesforceLinkEdit }}" data-field="salesforceLink" onInput="{{ handleField }}" placeholder="https://…" style="flex:1;min-width:0;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" />
+                      <sc-if value="{{ sg.hasSalesforce }}" hint-placeholder-val="{{ false }}"><a href="{{ sg.salesforceLink }}" target="_blank" rel="noopener" style="flex:none;display:inline-flex;align-items:center;padding:0 13px;border:1px solid var(--accent,#3a5a8c);border-radius:8px;background:#fff;color:var(--accent,#3a5a8c);font-size:12.5px;font-weight:600;text-decoration:none">Open ↗</a></sc-if>
+                    </div>
+                  </label>
+                  <label style="display:flex;flex-direction:column;gap:5px;grid-column:span 3"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Plans offered</span><input value="{{ sg.plansEdit }}" data-field="plans" onInput="{{ handleField }}" placeholder="e.g. Zion 2.5k IUA, Dental, Vision" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px;grid-column:span 3"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Contributions</span><input value="{{ sg.contributionsEdit }}" data-field="contributions" onInput="{{ handleField }}" placeholder="e.g. 100% EE 1250" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                </div>
+                <div style="height:1px;background:#f0eee8;margin:18px 0 16px"></div>
+                <h3 style="margin:0 0 14px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Group contact</h3>
+                <div style="display:grid;grid-template-columns:1.2fr 1.4fr 1fr;gap:14px 16px">
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Name</span><input value="{{ sg.contactNameEdit }}" data-field="contactName" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Email</span><input value="{{ sg.contactEmailEdit }}" data-field="contactEmail" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Phone</span><input value="{{ sg.contactPhoneEdit }}" data-field="contactPhone" onInput="{{ handleField }}" placeholder="—" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  <label style="display:flex;flex-direction:column;gap:5px;grid-column:span 3"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Role / title</span><input value="{{ sg.gcRoleEdit }}" data-field="gcRole" onInput="{{ handleField }}" placeholder="e.g. Group Contact (HR / Owner)" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                </div>
+                <div style="height:1px;background:#f0eee8;margin:18px 0 16px"></div>
+                <h3 style="margin:0 0 14px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">New hire orientation (NHO)</h3>
+                <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px 16px">
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Status</span>
+                    <select value="{{ sg.nhoStatus }}" data-field="nhoStatus" onChange="{{ handleField }}" style="padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+                      <option value="">Not set</option>
+                      <option value="not-required">Not required</option>
+                      <option value="tbd">To schedule</option>
+                      <option value="recurring">Recurring</option>
+                      <option value="scheduled">Scheduled</option>
+                    </select>
+                  </label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Detail / cadence</span><input value="{{ sg.nhoNoteEdit }}" data-field="nhoNote" onInput="{{ handleField }}" placeholder="e.g. monthly, 1st Tue" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                </div>
+                <div style="height:1px;background:#f0eee8;margin:18px 0 16px"></div>
+                <button data-sec="plans" onClick="{{ toggleSection }}" style="width:100%;display:flex;align-items:center;gap:8px;border:none;background:transparent;cursor:pointer;padding:0;text-align:left;margin-bottom:12px">
+                  <h3 style="margin:0;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Plans offered</h3>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9a968e">{{ sg.plansOfferedCount }} selected</span>
+                  <span style="margin-left:auto;font-size:11.5px;color:#9a968e;font-family:'IBM Plex Mono',monospace">{{ sg.plansToggleLabel }}</span>
+                </button>
+                <sc-if value="{{ sg.hasPlansSelected }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+                    <sc-for list="{{ sg.selectedPlans }}" as="sp" hint-placeholder-count="3">
+                      <span style="display:inline-flex;align-items:center;gap:6px;background:oklch(0.96 0.02 255);border:1px solid oklch(0.9 0.03 255);color:oklch(0.4 0.08 255);font-size:12px;font-weight:500;padding:4px 10px;border-radius:7px">{{ sp }}</span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ sg.noPlansSelected }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:12.5px;color:#b3afa6;margin-bottom:12px">No plans selected yet — expand to choose.</div>
+                </sc-if>
+                <sc-if value="{{ plansOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px">
+                  <sc-for list="{{ sg.planFamilies }}" as="fam" hint-placeholder-count="6">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #f0eee8">
+                        <span style="font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a877f;font-family:'IBM Plex Mono',monospace">{{ fam.name }}</span>
+                        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#b3afa6">{{ fam.countText }}</span>
+                      </div>
+                      <sc-for list="{{ fam.plans }}" as="p" hint-placeholder-count="3">
+                        <div data-plan="{{ p.plan }}" onClick="{{ togglePlan }}" style="{{ p.rowStyle }}">
+                          <span style="{{ p.boxStyle }}">{{ p.check }}</span>
+                          <span style="{{ p.labelStyle }}">{{ p.plan }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+                </div>
+                </sc-if>
+              </div>
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+                  <h3 style="margin:0;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Notes &amp; call log</h3>
+                  <button onClick="{{ toggleIntake }}" style="margin-left:auto;border:1px solid #ddd9d0;background:#fff;border-radius:7px;padding:5px 11px;font-size:12px;font-weight:600;color:#6f6c66;cursor:pointer" style-hover="border-color:#c5c0b4">⎘ Paste notes</button>
+                </div>
+                <sc-if value="{{ showIntake }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#faf9f6;border:1px dashed #d4cfc4;border-radius:10px;padding:13px;margin-bottom:14px">
+                    <div style="font-size:12px;color:#8a877f;margin-bottom:8px;line-height:1.5">Paste a transition note, email, or hand-off summary. I'll auto-fill matching fields (renewal date, GC, Salesforce link, watch-outs, NHO, OE decision) and save the full text as a note.</div>
+                    <textarea ref="{{ intakeText }}" rows="7" placeholder="Paste the whole note here…" style="width:100%;padding:10px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.5;font-family:'IBM Plex Mono',monospace"></textarea>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:9px">
+                      <button onClick="{{ toggleIntake }}" style="padding:8px 14px;border:1px solid #e6e3dc;border-radius:8px;background:#fff;color:#9a968e;font-size:12.5px;font-weight:500;cursor:pointer">Cancel</button>
+                      <button onClick="{{ parseIntake }}" style="padding:8px 16px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer">Import &amp; fill fields</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <div style="display:flex;gap:9px;margin-bottom:6px">
+                  <select ref="{{ noteType }}" style="padding:9px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;cursor:pointer;flex:none">
+                    <option value="Call">Call</option>
+                    <option value="Email">Email</option>
+                    <option value="Meeting">Meeting</option>
+                    <option value="Note">Note</option>
+                  </select>
+                  <textarea ref="{{ noteText }}" rows="2" placeholder="Log a call, note, or follow-up detail…" style="flex:1;padding:9px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff;resize:vertical;line-height:1.45"></textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+                  <button onClick="{{ addNote }}" style="padding:8px 16px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Add note</button>
+                </div>
+                <sc-if value="{{ sg.hasNotes }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:0">
+                    <sc-for list="{{ sg.notesView }}" as="n" hint-placeholder-count="2">
+                      <div style="display:flex;gap:12px;padding:13px 2px;border-top:1px solid #f4f2ec">
+                        <span style="{{ n.tagStyle }};font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:5px;flex:none;height:fit-content">{{ n.type }}</span>
+                        <div style="flex:1;min-width:0">
+                          <div style="font-size:13px;line-height:1.5;white-space:pre-wrap">{{ n.text }}</div>
+                          <div style="display:flex;align-items:center;gap:10px;margin-top:3px">
+                            <div style="font-size:11px;color:#b3afa6;font-family:'IBM Plex Mono',monospace">{{ n.dateText }}</div>
+                            <sc-if value="{{ n.isLong }}" hint-placeholder-val="{{ false }}">
+                              <button data-task="{{ n.toggleKey }}" onClick="{{ toggleTaskExpand }}" style="border:none;background:transparent;color:var(--accent,#3a5a8c);cursor:pointer;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding:0">{{ n.moreLabel }}</button>
+                            </sc-if>
+                          </div>
+                        </div>
+                        <button data-note="{{ n.id }}" onClick="{{ deleteNote }}" style="border:none;background:transparent;color:#c5c0b4;cursor:pointer;font-size:15px;flex:none;height:fit-content">×</button>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ sg.noNotes }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:18px;text-align:center;color:#b3afa6;font-size:12.5px;border-top:1px solid #f4f2ec">No notes yet</div>
+                </sc-if>
+              </div>
+            </div>
+
+            <!-- RIGHT -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <h3 style="margin:0 0 14px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Check-in cadence</h3>
+                <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Cadence</span>
+                  <select value="{{ sg.cadence }}" data-field="cadence" onChange="{{ handleCadence }}" style="padding:9px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+                    <option value="">Not set</option>
+                    <option value="monthly">Monthly (ALE / 50+)</option>
+                    <option value="quarterly">Quarterly (under 50)</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                <sc-if value="{{ sg.isCustom }}" hint-placeholder-val="{{ false }}">
+                  <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Every N days</span><input value="{{ sg.customDaysEdit }}" data-field="customCadenceDays" data-num="1" type="number" onInput="{{ handleField }}" placeholder="e.g. 60" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                </sc-if>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;border-top:1px solid #f0eee8"><span style="color:#9a968e">Last check-in</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ sg.lastCheckInText }}</span></div>
+                <label style="display:flex;flex-direction:column;gap:5px;margin:8px 0 12px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Next check-in</span><input value="{{ sg.nextCheckInEdit }}" data-field="nextCheckIn" type="date" onInput="{{ handleField }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                <button onClick="{{ logCheckIn }}" style="width:100%;padding:10px;border:1px solid var(--accent,#3a5a8c);border-radius:8px;background:#fff;color:var(--accent,#3a5a8c);font-size:13px;font-weight:600;cursor:pointer">✓ Quick log (today)</button>
+                <button onClick="{{ toggleCheckin }}" style="width:100%;margin-top:8px;padding:10px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Guided check-in →</button>
+                <sc-if value="{{ showCheckin }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:13px;padding-top:14px;border-top:1px solid #f0eee8;display:flex;flex-direction:column;gap:10px">
+                    <div style="font-size:11.5px;color:#8a877f;line-height:1.45">Fill what's relevant — saved as a dated check-in summary and the next date is scheduled from cadence.</div>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Business / changes</span><textarea ref="{{ ciBusiness }}" rows="2" placeholder="New locations, M&A, headcount…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Service feedback (how's service)</span><textarea ref="{{ ciService }}" rows="2" placeholder="Issues, praise, escalations…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">FTE / staffing</span><textarea ref="{{ ciFte }}" rows="1" placeholder="Hiring, layoffs, ALE status…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">New hire orientation</span><textarea ref="{{ ciNho }}" rows="1" placeholder="Scheduled? recurring?" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Product interest</span><textarea ref="{{ ciProduct }}" rows="1" placeholder="Dental, vision, accident…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Claims / Rx</span><textarea ref="{{ ciClaims }}" rows="1" placeholder="Large claims, Rx concerns…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <label style="display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Agreed-upon next needs</span><textarea ref="{{ ciNeeds }}" rows="2" placeholder="What you committed to do next…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.4"></textarea></label>
+                    <div style="display:flex;justify-content:flex-end;gap:8px">
+                      <button onClick="{{ toggleCheckin }}" style="padding:8px 14px;border:1px solid #e6e3dc;border-radius:8px;background:#fff;color:#9a968e;font-size:12.5px;font-weight:500;cursor:pointer">Cancel</button>
+                      <button onClick="{{ saveCheckin }}" style="padding:8px 16px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer">Save check-in</button>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <button data-sec="oe" onClick="{{ toggleSection }}" style="width:100%;display:flex;align-items:center;gap:10px;border:none;background:transparent;cursor:pointer;padding:0;text-align:left">
+                  <h3 style="margin:0;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Open enrollment</h3>
+                  <span style="margin-left:auto;font-size:11.5px;color:#9a968e;font-family:'IBM Plex Mono',monospace">{{ sg.oeToggleLabel }}</span>
+                </button>
+                <sc-if value="{{ oeOpen }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top:14px">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px">
+                    <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">OE start</span><input value="{{ sg.oeStartEdit }}" data-field="oeStartDate" type="date" onInput="{{ handleField }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                    <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">OE end</span><input value="{{ sg.oeEndEdit }}" data-field="oeEndDate" type="date" onInput="{{ handleField }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                  </div>
+                  <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:11px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">This year's approach</span>
+                    <select value="{{ sg.oeMode }}" data-field="oeMode" onChange="{{ handleField }}" style="padding:9px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff;cursor:pointer">
+                      <option value="undecided">Not decided yet</option>
+                      <option value="active">Active OE (re-shop / re-elect)</option>
+                      <option value="passive">Passive / auto-renew</option>
+                    </select>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;padding:7px 2px;cursor:pointer;font-size:13px;margin-bottom:4px"><input type="checkbox" checked="{{ sg.asaSigned }}" data-field="asaSigned" onChange="{{ handleCheck }}" style="width:17px;height:17px;accent-color:var(--accent,#3a5a8c);cursor:pointer" />ASA / BSA signed</label>
+                  <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Decision notes</span><textarea value="{{ sg.oeDecisionNoteEdit }}" data-field="oeDecisionNote" onInput="{{ handleField }}" rows="3" placeholder="What was decided, and why…" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.45"></textarea></label>
+                </div>
+                </sc-if>
+              </div>
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <button data-sec="watch" onClick="{{ toggleSection }}" style="width:100%;display:flex;align-items:center;gap:10px;border:none;background:transparent;cursor:pointer;padding:0;text-align:left">
+                  <h3 style="margin:0;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Watch-outs &amp; monitoring</h3>
+                  <span style="margin-left:auto;font-size:11.5px;color:#9a968e;font-family:'IBM Plex Mono',monospace">{{ sg.watchToggleLabel }}</span>
+                </button>
+                <sc-if value="{{ watchOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px">
+                  <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:11px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Critical watch-out</span><textarea value="{{ sg.watchOutsEdit }}" data-field="watchOuts" onInput="{{ handleField }}" rows="3" placeholder="e.g. must keep ≥2 enrolled or loses eligibility" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:12.5px;background:#fff;resize:vertical;line-height:1.45"></textarea></label>
+                  <label style="display:flex;align-items:center;gap:10px;padding:7px 2px;cursor:pointer;font-size:13px"><input type="checkbox" checked="{{ sg.monitorMonthly }}" data-field="monitorMonthly" onChange="{{ handleCheck }}" style="width:17px;height:17px;accent-color:var(--accent,#3a5a8c);cursor:pointer" />Monitor monthly (adds a recurring reminder)</label>
+                </div>
+                </sc-if>
+              </div>
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <h3 style="margin:0 0 14px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Follow-up reminder</h3>
+                <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:11px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Date</span><input value="{{ sg.followUpDateEdit }}" data-field="followUpDate" type="date" onInput="{{ handleField }}" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                <label style="display:flex;flex-direction:column;gap:5px;margin-bottom:11px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">What for</span><input value="{{ sg.followUpNoteEdit }}" data-field="followUpNote" onInput="{{ handleField }}" placeholder="e.g. send plan options" style="width:100%;padding:8px 10px;border:1px solid #ddd9d0;border-radius:8px;font-size:13px;background:#fff" /></label>
+                <button onClick="{{ clearFollowUp }}" style="width:100%;padding:8px;border:1px solid #e6e3dc;border-radius:8px;background:#fff;color:#9a968e;font-size:12.5px;font-weight:500;cursor:pointer">Clear reminder</button>
+              </div>
+
+              <div style="background:#fff;border:1px solid #e6e3dc;border-radius:12px;padding:18px 20px">
+                <h3 style="margin:0 0 12px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5a574f;font-family:'IBM Plex Mono',monospace">Key dates</h3>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:8px 0;border-top:1px solid #f0eee8"><span style="color:#9a968e">Renewal / plan date</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ sg.renewalText }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:8px 0;border-top:1px solid #f0eee8"><span style="color:#9a968e">Full ownership</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ sg.fullOwnershipText }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:8px 0;border-top:1px solid #f0eee8"><span style="color:#9a968e">Commission effective</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ sg.commissionText }}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:8px 0;border-top:1px solid #f0eee8"><span style="color:#9a968e">Hand-off window</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ sg.transitionTimeline }}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showAddGroup }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ toggleAddGroup }}" style="position:fixed;inset:0;background:rgba(20,18,24,.42);display:flex;align-items:flex-start;justify-content:center;padding:64px 20px;z-index:50">
+          <div onClick="{{ stop }}" style="background:#fff;border:1px solid #e6e3dc;border-radius:14px;width:100%;max-width:460px;box-shadow:0 20px 50px rgba(0,0,0,.22);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #f0eee8">
+              <h3 style="margin:0;font-size:15px;font-weight:600">Add a group</h3>
+              <button onClick="{{ toggleAddGroup }}" style="margin-left:auto;border:none;background:transparent;color:#b3afa6;font-size:20px;cursor:pointer;line-height:1">×</button>
+            </div>
+            <div style="padding:18px 20px;display:flex;flex-direction:column;gap:13px">
+              <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Group name *</span><input ref="{{ ngName }}" placeholder="e.g. Acme Manufacturing" style="width:100%;padding:9px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:13.5px;background:#fff" /></label>
+              <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Status</span>
+                <select ref="{{ ngStatus }}" style="width:100%;padding:9px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:13.5px;background:#fff;cursor:pointer">
+                  <option value="active">Active client</option>
+                  <option value="onboarding">Onboarding</option>
+                  <option value="transition">In transition</option>
+                  <option value="open-enrollment">Open enrollment</option>
+                  <option value="renewal">Renewal</option>
+                </select>
+              </label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+                <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Renewal date</span><input ref="{{ ngRenewal }}" type="date" style="width:100%;padding:9px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:13.5px;background:#fff" /></label>
+                <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Employees</span><input ref="{{ ngEmployees }}" type="number" placeholder="—" style="width:100%;padding:9px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:13.5px;background:#fff" /></label>
+              </div>
+              <label style="display:flex;flex-direction:column;gap:5px"><span style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9a968e;font-family:'IBM Plex Mono',monospace">Previous BM (if transitioning)</span><input ref="{{ ngFromBM }}" placeholder="optional" style="width:100%;padding:9px 11px;border:1px solid #ddd9d0;border-radius:8px;font-size:13.5px;background:#fff" /></label>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:9px;padding:14px 20px;border-top:1px solid #f0eee8;background:#faf9f6">
+              <button onClick="{{ toggleAddGroup }}" style="padding:9px 16px;border:1px solid #e6e3dc;border-radius:8px;background:#fff;color:#6f6c66;font-size:13px;font-weight:500;cursor:pointer">Cancel</button>
+              <button onClick="{{ createGroup }}" style="padding:9px 18px;border:none;border-radius:8px;background:var(--accent,#3a5a8c);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Create &amp; open</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;managerName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Josh Gilbert&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3a5a8c&quot;,&quot;options&quot;:[&quot;#3a5a8c&quot;,&quot;#4a6b52&quot;,&quot;#7a5a3a&quot;,&quot;#6b4a6b&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    let theme = 'light';
+    try { const t = localStorage.getItem('crm_theme_v1'); if (t) theme = t; } catch(e){}
+    try { document.documentElement.dataset.theme = theme; } catch(e){}
+    let templates = (window.WORKFLOW_TEMPLATES || []).map(t => JSON.parse(JSON.stringify(t)));
+    try { const saved = JSON.parse(localStorage.getItem('crm_wf_templates_v1') || 'null'); if (saved && Array.isArray(saved) && saved.length) templates = saved; } catch(e){}
+    templates = templates.map(t => this._normTpl(t));
+    this.state = { groups:[], view:'dashboard', prevView:'dashboard', selectedId:null, search:'', listFilter:'all', sort:'priority', loaded:false, theme, showIntake:false, showCheckin:false, showSnoozed:false, showAddGroup:false, sections:{}, templates, expanded:{}, editTplId:null };
+    this.noteText = React.createRef();
+    this.noteType = React.createRef();
+    this.intakeText = React.createRef();
+    this.ng = { name:React.createRef(), fromBM:React.createRef(), renewal:React.createRef(), employees:React.createRef(), status:React.createRef() };
+    this.ci = { business:React.createRef(), service:React.createRef(), fte:React.createRef(), nho:React.createRef(), product:React.createRef(), needs:React.createRef(), claims:React.createRef() };
+  }
+
+  componentDidMount(){
+    let seed = (window.CRM_SEED || []).map(g => ({...g}));
+    try {
+      const saved = JSON.parse(localStorage.getItem('crm_groups_v1') || 'null');
+      if (saved && Array.isArray(saved) && saved.length){
+        const map = {}; saved.forEach(g => { map[g.id] = g; });
+        seed = seed.map(g => map[g.id] ? {...g, ...map[g.id]} : g);
+      }
+    } catch(e){}
+    this.setState({ groups: seed, loaded: true });
+  }
+
+  _persist(groups){ try { localStorage.setItem('crm_groups_v1', JSON.stringify(groups)); } catch(e){} }
+  _update(id, patch){
+    this.setState(s => {
+      const groups = s.groups.map(g => g.id === id ? {...g, ...patch} : g);
+      this._persist(groups);
+      return { groups };
+    });
+  }
+  _g(id){ return this.state.groups.find(g => g.id === id); }
+
+  _today(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+  _todayISO(){ const d=this._today(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  _parse(iso){ if(!iso) return null; const d = new Date(iso + 'T00:00:00'); return isNaN(d) ? null : d; }
+  _daysUntil(iso){ const d = this._parse(iso); if(!d) return null; return Math.round((d - this._today())/86400000); }
+  _fmt(iso){ const d = this._parse(iso); if(!d) return '—'; const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return M[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(); }
+  _addInterval(iso, cadence, days){
+    const base = this._parse(iso) || this._today();
+    const d = new Date(base);
+    if (cadence === 'monthly') d.setMonth(d.getMonth()+1);
+    else if (cadence === 'quarterly') d.setMonth(d.getMonth()+3);
+    else if (cadence === 'custom' && days) d.setDate(d.getDate()+Number(days));
+    else return null;
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  _guessDate(str){
+    if(!str) return null;
+    const m = str.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    if(!m) return null;
+    const mo = Number(m[1]), da = Number(m[2]);
+    let yr = m[3] ? Number(m[3]) : null; if (yr && yr < 100) yr += 2000;
+    const today = this._today();
+    if (!yr){ yr = today.getFullYear(); if (new Date(yr, mo-1, da) < today) yr += 1; }
+    return yr+'-'+String(mo).padStart(2,'0')+'-'+String(da).padStart(2,'0');
+  }
+  _monAbbr(iso){ const d = this._parse(iso); if(!d) return ''; return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]; }
+
+  // ---- handlers ----
+  goView = (v) => this.setState({ view:v, selectedId:null, search:'' });
+  goDashboard = () => this.goView('dashboard');
+  goGroups = () => this.setState({ view:'groups', selectedId:null, listFilter:'all' });
+  goReach = () => this.setState({ view:'groups', selectedId:null, listFilter:'reachout' });
+  goTransition = () => this.setState({ view:'groups', selectedId:null, listFilter:'transition' });
+  goOeNow = () => this.setState({ view:'groups', selectedId:null, listFilter:'oenow' });
+  goOe90 = () => this.setState({ view:'groups', selectedId:null, listFilter:'oe90' });
+  goFollow = () => this.setState({ view:'groups', selectedId:null, listFilter:'followup' });
+  goFlagged = () => this.setState({ view:'groups', selectedId:null, listFilter:'priority' });
+  setFilter = (e) => this.setState({ view:'groups', selectedId:null, listFilter: e.currentTarget.dataset.filter });
+  setListFilter = (e) => this.setState({ listFilter: e.currentTarget.dataset.filter });
+  setSort = (e) => this.setState({ sort: e.target.value });
+  onSearch = (e) => { const v = e.target.value; this.setState(s => ({ search:v, view: v ? 'groups' : (s.view==='detail'?'detail':s.view), selectedId: v? null : s.selectedId })); };
+  openGroup = (e) => { const id = e.currentTarget.dataset.id; this.setState(s => ({ selectedId:id, prevView: s.view==='detail'?s.prevView:s.view, view:'detail' })); };
+  back = () => this.setState(s => ({ view: s.prevView || 'groups', selectedId:null }));
+  togglePriority = (e) => { e.stopPropagation(); const id = e.currentTarget.dataset.id; const g = this._g(id); if(g) this._update(id, { priority: !g.priority }); };
+  snoozeReminder = (e) => {
+    e.stopPropagation();
+    const id = e.currentTarget.dataset.id; const g = this._g(id); if(!g) return;
+    const d = this._today(); d.setDate(d.getDate()+7);
+    const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    this._update(id, { snoozedUntil: iso });
+  };
+
+  unsnooze = (e) => { e.stopPropagation(); const id = e.currentTarget.dataset.id; this._update(id, { snoozedUntil:null }); };
+  toggleTheme = () => { this.setState(s => { const theme = s.theme==='dark' ? 'light' : 'dark'; try { localStorage.setItem('crm_theme_v1', theme); } catch(e){} try { document.documentElement.dataset.theme = theme; } catch(e){} return { theme }; }); };
+  toggleSnoozed = () => this.setState(s => ({ showSnoozed: !s.showSnoozed }));
+  toggleSection = (e) => { const k = e.currentTarget.dataset.sec; this.setState(s => ({ sections: { ...s.sections, [k]: !s.sections[k] } })); };
+  toggleAddGroup = () => this.setState(s => ({ showAddGroup: !s.showAddGroup }));
+  createGroup = () => {
+    const name = ((this.ng.name.current && this.ng.name.current.value) || '').trim();
+    if (!name){ if(this.ng.name.current) this.ng.name.current.focus(); return; }
+    const renewal = (this.ng.renewal.current && this.ng.renewal.current.value) || '';
+    const emp = (this.ng.employees.current && this.ng.employees.current.value) || '';
+    const status = (this.ng.status.current && this.ng.status.current.value) || 'active';
+    const fromBM = ((this.ng.fromBM.current && this.ng.fromBM.current.value) || '').trim();
+    const id = 'g_new_' + Date.now();
+    const isTransition = status === 'transition';
+    const g = {
+      id, group:name, currentBM: fromBM || (isTransition?'—':'You'),
+      renewalMonth: renewal? this._monAbbr(renewal):'', renewalDate: renewal||null,
+      employees: emp? Number(emp): null, status,
+      warmHandoff:!isTransition, newContact:!isTransition, ownershipTaken:!isTransition, sfUpdated:!isTransition, changeCompleted:!isTransition,
+      cadence:'', notes:[], priority:false
+    };
+    this.setState(s => {
+      const groups = [g, ...s.groups];
+      this._persist(groups);
+      return { groups, showAddGroup:false, selectedId:id, prevView:'groups', view:'detail' };
+    });
+  };
+
+  // ---------- plans offered ----------
+  togglePlan = (e) => {
+    const plan = e.currentTarget.dataset.plan; const id = this.state.selectedId; const g = this._g(id);
+    const cur = Array.isArray(g.plansOffered) ? g.plansOffered.slice() : [];
+    const i = cur.indexOf(plan); if (i>=0) cur.splice(i,1); else cur.push(plan);
+    this._update(id, { plansOffered: cur });
+  };
+
+  // ---------- workflows attached to a group ----------
+  _isoMinus(iso, days){ const d=this._parse(iso); if(!d) return null; d.setDate(d.getDate()-days); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  _tpl(id){ return (this.state.templates||[]).find(t => t.id===id); }
+  _anchorDate(g, tpl){ if (tpl.anchor==='renewal') return g.renewalDate; if (tpl.anchor==='oe') return g.oeStartDate || g.renewalDate; return null; }
+  attachWorkflow = (e) => {
+    const tplId = e.target.value; e.target.value='';
+    if (!tplId) return;
+    const id = this.state.selectedId; const g = this._g(id); const tpl = this._tpl(tplId); if (!tpl) return;
+    const anchor = this._anchorDate(g, tpl);
+    let n = 0;
+    const sections = (tpl.sections||[]).map(sec => ({
+      name: sec.name,
+      tasks: (sec.tasks||[]).map(t => {
+        const label = typeof t==='string' ? t : t.label;
+        const offset = (typeof t==='object' && t.offset!=null) ? t.offset : null;
+        const due = (offset!=null && anchor) ? this._isoMinus(anchor, offset) : null;
+        return { id:'t'+Date.now()+'_'+(n++), label, offset, due, assigned:null, completed:null, note:'', reminder:null };
+      })
+    }));
+    const wf = { id:'wf'+Date.now(), type:tpl.type, templateId:tpl.id, title:tpl.title, startedDate:this._todayISO(), sections };
+    this._update(id, { workflows: [ ...(g.workflows||[]), wf ] });
+  };
+  removeWorkflow = (e) => {
+    e.stopPropagation();
+    const wfId = e.currentTarget.dataset.wf; const id = this.state.selectedId; const g = this._g(id);
+    if (typeof confirm==='function' && !confirm('Remove this workflow and its tasks?')) return;
+    this._update(id, { workflows: (g.workflows||[]).filter(w => w.id!==wfId) });
+  };
+  _mutateTask(wfId, taskId, fn){
+    const id = this.state.selectedId; const g = this._g(id);
+    const workflows = (g.workflows||[]).map(w => w.id!==wfId ? w : ({ ...w, sections: w.sections.map(sec => ({ ...sec, tasks: sec.tasks.map(t => t.id===taskId ? fn({...t}) : t) })) }));
+    this._update(id, { workflows });
+  }
+  toggleTask = (e) => { e.stopPropagation(); const d=e.currentTarget.dataset; this._mutateTask(d.wf, d.task, t => { t.completed = t.completed ? null : this._todayISO(); return t; }); };
+  setTaskField = (e) => { const d=e.target.dataset; const v=e.target.value||null; this._mutateTask(d.wf, d.task, t => { t[d.field]=v; return t; }); };
+  removeTask = (e) => {
+    e.stopPropagation();
+    const d=e.currentTarget.dataset; const id=this.state.selectedId; const g=this._g(id);
+    const workflows=(g.workflows||[]).map(w => w.id!==d.wf? w : ({...w, sections:w.sections.map(sec=>({...sec, tasks:sec.tasks.filter(t=>t.id!==d.task)}))}));
+    this._update(id,{workflows});
+  };
+  addTask = (e) => {
+    const d=e.currentTarget.dataset; const id=this.state.selectedId; const g=this._g(id);
+    const newId='t'+Date.now();
+    const workflows=(g.workflows||[]).map(w => w.id!==d.wf? w : ({...w, sections:w.sections.map(sec=> sec.name!==d.sec? sec : ({...sec, tasks:[...sec.tasks, {id:newId, label:'New task', offset:null, due:null, assigned:null, completed:null, note:'', reminder:null}]}))}));
+    this.setState(s => ({ expanded: { ...s.expanded, [newId]:true } }));
+    this._update(id,{workflows});
+  };
+  toggleTaskExpand = (e) => { e.stopPropagation(); const k=e.currentTarget.dataset.task; this.setState(s => ({ expanded: { ...s.expanded, [k]: !s.expanded[k] } })); };
+
+  // ---------- workflow templates (editable) ----------
+  goTemplates = () => this.setState({ view:'templates', selectedId:null });
+  _persistTemplates(templates){ try { localStorage.setItem('crm_wf_templates_v1', JSON.stringify(templates)); } catch(e){} }
+  _updateTemplates(updater){ this.setState(s => { const templates = updater(JSON.parse(JSON.stringify(s.templates))); this._persistTemplates(templates); return { templates }; }); }
+  editTemplate = (e) => { const id=e.currentTarget.dataset.tpl; this.setState(s => ({ editTplId: s.editTplId===id? null : id })); };
+  tplRenameTitle = (e) => { const id=e.target.dataset.tpl; const v=e.target.value; this._updateTemplates(ts => { const t=ts.find(x=>x.id===id); if(t) t.title=v; return ts; }); };
+  tplTaskField = (e) => { const d=e.target.dataset; const v=e.target.value; this._updateTemplates(ts => { const t=ts.find(x=>x.id===d.tpl); if(t){ const tk=t.sections[+d.sec].tasks[+d.task]; if(d.field==='offset') tk.offset = v===''? null : Number(v); else tk.label = v; } return ts; }); };
+  tplAddTask = (e) => { const d=e.currentTarget.dataset; this._updateTemplates(ts => { const t=ts.find(x=>x.id===d.tpl); if(t) t.sections[+d.sec].tasks.push({label:'New task', offset:null}); return ts; }); };
+  tplRemoveTask = (e) => { const d=e.currentTarget.dataset; this._updateTemplates(ts => { const t=ts.find(x=>x.id===d.tpl); if(t) t.sections[+d.sec].tasks.splice(+d.task,1); return ts; }); };
+  tplAddSection = (e) => { const id=e.currentTarget.dataset.tpl; this._updateTemplates(ts => { const t=ts.find(x=>x.id===id); if(t) t.sections.push({name:'New section', tasks:[]}); return ts; }); };
+  tplRemoveSection = (e) => { const d=e.currentTarget.dataset; this._updateTemplates(ts => { const t=ts.find(x=>x.id===d.tpl); if(t) t.sections.splice(+d.sec,1); return ts; }); };
+  tplSectionName = (e) => { const d=e.target.dataset; const v=e.target.value; this._updateTemplates(ts => { const t=ts.find(x=>x.id===d.tpl); if(t) t.sections[+d.sec].name=v; return ts; }); };
+  tplAddCustom = () => { const nid='tpl_custom_'+Date.now(); this._updateTemplates(ts => { ts.push({id:nid, type:'custom', title:'New workflow', builtin:false, anchor:null, sections:[{name:'Tasks', tasks:[]}]}); return ts; }); this.setState({ editTplId:nid }); };
+  tplDelete = (e) => { const id=e.currentTarget.dataset.tpl; if (typeof confirm==='function' && !confirm('Delete this template?')) return; this._updateTemplates(ts => ts.filter(t => t.id!==id || t.builtin)); this.setState({ editTplId:null }); };
+  tplReset = () => { if (typeof confirm==='function' && !confirm('Reset all templates to defaults? Your edits will be lost.')) return; try { localStorage.removeItem('crm_wf_templates_v1'); } catch(e){} const def=(window.WORKFLOW_TEMPLATES||[]).map(t=>this._normTpl(JSON.parse(JSON.stringify(t)))); this.setState({ templates:def, editTplId:null }); };
+  _normTpl(t){ (t.sections||[]).forEach(s => { s.tasks = (s.tasks||[]).map(x => typeof x==='string' ? {label:x, offset:null} : {label:x.label, offset:(x.offset!=null?x.offset:null)}); }); return t; }
+  toggleIntake = () => this.setState(s => ({ showIntake: !s.showIntake }));
+  toggleCheckin = () => this.setState(s => ({ showCheckin: !s.showCheckin }));
+  logMonitor = () => {
+    const id = this.state.selectedId; const g = this._g(id); const t = this._todayISO();
+    const note = { id:'n'+Date.now(), date:t, type:'Monitor', text:'Monthly monitor logged — confirmed eligibility / enrolled count.' };
+    this._update(id, { lastMonitor:t, notes:[note, ...(g.notes||[])] });
+  };
+  parseIntake = () => {
+    const raw = ((this.intakeText.current && this.intakeText.current.value) || '').trim();
+    if (!raw) { this.setState({ showIntake:false }); return; }
+    const id = this.state.selectedId; const g = this._g(id);
+    const lines = raw.split(/\r?\n/);
+    const patch = {};
+    const grab = (re) => { for (const ln of lines){ const m = ln.match(re); if (m) return (m[1]||'').trim(); } return null; };
+    let v;
+    if (v=grab(/transition timeline\s*[:\-\u2013]\s*(.+)/i)) patch.transitionTimeline = v;
+    if (v=grab(/^\s*(?:gc|group contact)\s*[:\-]\s*(.+)/i)) patch.contactName = v;
+    if (v=grab(/salesforce\s*link\s*[:\-]\s*(\S+)/i)) patch.salesforceLink = v;
+    if (v=grab(/(?:benefits?\s*(?:enrollment)?\s*)?platform\s*[:\-]\s*(.+)/i)) patch.platform = v;
+    if (v=grab(/group size\s*[:\-]\s*(.+)/i)){ const a = v.match(/\((\d+)\)\s*active/i); if (a) patch.activeOnPlans = Number(a[1]); const e = v.match(/\(?\s*\d+\s*-\s*(\d+)\s*\)?/); if (e) patch.employees = Number(e[1]); }
+    if (v=grab(/renewal\s*(?:effective)?\s*date\s*[:\-]\s*(.+)/i)){ const iso = this._guessDate(v); if (iso){ patch.renewalDate = iso; patch.renewalMonth = this._monAbbr(iso); } }
+    for (const ln of lines){ const m = ln.match(/nho\s*[:\-]\s*(.+)/i); if (m){ patch.nhoNote = m[1].trim(); patch.nhoStatus = /not (set|required)|does not require/i.test(m[1]) ? 'not-required' : 'tbd'; break; } }
+    for (const ln of lines){ let m; if (m=ln.match(/intro email.*?[:\-]\s*(.+)/i)){ const d = this._guessDate(m[1]); if (d) patch.introEmailDate = d; } if (m=ln.match(/warm hand-?off.*?[:\-]\s*(.+)/i)){ const d = this._guessDate(m[1]); if (d) patch.warmHandoffDate = d; } }
+    for (const ln of lines){ const m = ln.match(/(?:oe vs|auto-?renewal|open enrollment)[^:]*[:\-]\s*(.+)/i); if (m){ patch.oeDecisionNote = m[1].trim(); if (/auto-?renew/i.test(ln)) patch.oeMode = 'passive'; break; } }
+    for (const ln of lines){ const m = ln.match(/important notes?\s*[:\-]\s*(.+)/i); if (m){ patch.watchOuts = m[1].trim(); if (/monitor/i.test(m[1])) patch.monitorMonthly = true; break; } }
+    const note = { id:'n'+Date.now(), date:this._todayISO(), type:'Note', text:'Imported notes —\n\n'+raw };
+    patch.notes = [note, ...(g.notes||[])];
+    this._update(id, patch);
+    if (this.intakeText.current) this.intakeText.current.value = '';
+    this.setState({ showIntake:false });
+  };
+  saveCheckin = () => {
+    const id = this.state.selectedId; const g = this._g(id);
+    const cats = [['Business / changes','business'],['Service feedback (HYS)','service'],['FTE / staffing','fte'],['New hire orientation','nho'],['Product interest','product'],['Agreed-upon needs','needs'],['Claims / Rx','claims']];
+    const parts = [];
+    cats.forEach(([label,key]) => { const r = this.ci[key]; const val = ((r && r.current && r.current.value) || '').trim(); if (val) parts.push('• '+label+': '+val); });
+    if (!parts.length){ this.setState({ showCheckin:false }); return; }
+    const t = this._todayISO();
+    const next = this._addInterval(t, g.cadence, g.customCadenceDays);
+    const note = { id:'n'+Date.now(), date:t, type:'Check-in', text:parts.join('\n') };
+    this._update(id, { lastCheckIn:t, nextCheckIn:next, notes:[note, ...(g.notes||[])] });
+    cats.forEach(([_,key]) => { const r = this.ci[key]; if (r && r.current) r.current.value = ''; });
+    this.setState({ showCheckin:false });
+  };
+
+  handleField = (e) => { const t=e.target; let v=t.value; if(t.dataset.num) v = v===''? null : Number(v); this._update(this.state.selectedId, { [t.dataset.field]: v }); };
+  handleCheck = (e) => { const t=e.target; this._update(this.state.selectedId, { [t.dataset.field]: t.checked }); };
+  handleCadence = (e) => {
+    const v = e.target.value; const id = this.state.selectedId; const g = this._g(id);
+    let next = g.nextCheckIn;
+    if (!next && v) next = this._addInterval(g.lastCheckIn || this._todayISO(), v, g.customCadenceDays);
+    this._update(id, { cadence: v, nextCheckIn: next });
+  };
+  logCheckIn = () => {
+    const id = this.state.selectedId; const g = this._g(id); const t = this._todayISO();
+    const next = this._addInterval(t, g.cadence, g.customCadenceDays);
+    const note = { id:'n'+Date.now(), date:t, type:'Check-in', text:'Check-in completed.' };
+    this._update(id, { lastCheckIn:t, nextCheckIn: next, notes:[note, ...(g.notes||[])] });
+  };
+  addNote = () => {
+    const id = this.state.selectedId;
+    const txt = ((this.noteText.current && this.noteText.current.value) || '').trim();
+    const type = (this.noteType.current && this.noteType.current.value) || 'Note';
+    if (!txt) return;
+    const g = this._g(id);
+    const note = { id:'n'+Date.now(), date:this._todayISO(), type, text:txt };
+    this._update(id, { notes:[note, ...(g.notes||[])] });
+    if (this.noteText.current) this.noteText.current.value = '';
+  };
+  deleteNote = (e) => { const nid = e.currentTarget.dataset.note; const id = this.state.selectedId; const g = this._g(id); this._update(id, { notes:(g.notes||[]).filter(n => n.id !== nid) }); };
+  clearFollowUp = () => this._update(this.state.selectedId, { followUpDate:null, followUpNote:'' });
+
+  // ---- view model ----
+  _tones(){
+    return {
+      urgent:'background:oklch(0.95 0.035 30);color:oklch(0.47 0.16 30)',
+      warn:'background:oklch(0.96 0.05 80);color:oklch(0.46 0.11 65)',
+      accent:'background:oklch(0.95 0.03 250);color:oklch(0.44 0.11 255)',
+      good:'background:oklch(0.95 0.04 155);color:oklch(0.40 0.09 155)',
+      neutral:'background:#f0eee8;color:#6f6c66'
+    };
+  }
+  _statusInfo(s){
+    const m = {
+      transition:{label:'In transition', color:'oklch(0.46 0.11 255)'},
+      active:{label:'Active client', color:'oklch(0.42 0.09 155)'},
+      onboarding:{label:'Onboarding', color:'oklch(0.5 0.12 200)'},
+      'open-enrollment':{label:'Open enrollment', color:'oklch(0.55 0.13 65)'},
+      renewal:{label:'Renewal', color:'oklch(0.58 0.13 75)'},
+      'at-risk':{label:'At risk', color:'oklch(0.52 0.17 28)'},
+      parked:{label:'Parked', color:'#8a877f'}
+    };
+    return m[s] || m.active;
+  }
+  _transitionStep(g){
+    if (g.changeCompleted) return 'Complete';
+    if (!g.warmHandoff) return 'Awaiting hand-off';
+    if (!g.newContact) return 'Make welcome call';
+    if (!g.ownershipTaken) return 'Take ownership';
+    if (!g.sfUpdated) return 'Update Salesforce';
+    return 'Mark complete';
+  }
+
+  buildVM(g){
+    const T = this._tones();
+    const st = this._statusInfo(g.status);
+    const star = g.priority;
+    const starBase = 'border:none;background:transparent;cursor:pointer;flex:none;line-height:1;padding:2px;';
+    const starOn = 'color:oklch(0.68 0.14 75);';
+    const starOff = 'color:#d8d4cb;';
+
+    const rd = this._daysUntil(g.renewalDate);
+    const renewalSub = rd==null ? '' : (rd<0 ? Math.abs(rd)+'d ago' : rd===0 ? 'today' : 'in '+rd+'d');
+    const renewalTone = rd==null ? '#b3afa6' : rd<0 ? 'oklch(0.52 0.17 28)' : rd<=30 ? 'oklch(0.52 0.16 30)' : rd<=90 ? 'oklch(0.50 0.12 65)' : '#6f6c66';
+
+    const inTransition = g.status==='transition';
+    let wfTotalAll=0, wfDoneAll=0; const wfCount=(g.workflows||[]).length;
+    (g.workflows||[]).forEach(w=>(w.sections||[]).forEach(sec=>(sec.tasks||[]).forEach(t=>{ wfTotalAll++; if(t.completed) wfDoneAll++; })));
+    const wfPct = wfTotalAll? Math.round(wfDoneAll/wfTotalAll*100):0;
+    const hasTransitionWf = (g.workflows||[]).some(w=>w.type==='transition');
+    const transitionStartSuggest = inTransition && !hasTransitionWf;
+
+    const ci = this._daysUntil(g.nextCheckIn);
+    const checkInDue = ci!=null && ci<0;
+    const checkInText = g.nextCheckIn ? this._fmt(g.nextCheckIn) : '—';
+    const checkInColor = ci==null ? '#b3afa6' : ci<0 ? 'oklch(0.52 0.17 28)' : ci<=14 ? 'oklch(0.50 0.12 65)' : '#6f6c66';
+
+    const fu = this._daysUntil(g.followUpDate);
+    const hasFollowUp = !!g.followUpDate;
+    const followUpDue = fu!=null && fu<=0;
+    const followUpText = hasFollowUp ? (fu<0 ? Math.abs(fu)+'d ago' : fu===0 ? 'Today' : this._fmt(g.followUpDate)) : '';
+    const followUpColor = !hasFollowUp ? '#b3afa6' : fu<=0 ? 'oklch(0.52 0.17 28)' : fu<=3 ? 'oklch(0.50 0.12 65)' : '#6f6c66';
+
+    let cadenceLabel = 'Not set';
+    if (g.cadence==='monthly') cadenceLabel='Monthly';
+    else if (g.cadence==='quarterly') cadenceLabel='Quarterly';
+    else if (g.cadence==='custom') cadenceLabel = g.customCadenceDays ? ('Every '+g.customCadenceDays+'d') : 'Custom';
+
+    // score + reasons
+    let score = 0; const reasons = [];
+    // workflow task due summary (incomplete tasks with a due date)
+    let wfOverdue=0, wfDueSoon=0, nextWfTask=null;
+    (g.workflows||[]).forEach(w => (w.sections||[]).forEach(sec => (sec.tasks||[]).forEach(t => {
+      if (t.completed) return; const du=this._daysUntil(t.due); if(du==null) return;
+      if(du<0) wfOverdue++; else if(du<=7) wfDueSoon++;
+      if(!nextWfTask || du < nextWfTask.du) nextWfTask={label:t.label, du};
+    })));
+    // renewal workflow suggestion: within auto-start window and no renewal workflow yet
+    const hasRenewalWf = (g.workflows||[]).some(w => w.type==='renewal');
+    const renewalStartSuggest = !hasRenewalWf && rd!=null && rd>=0 && rd<=90;
+    if (followUpDue){ score += 130; reasons.push({label: fu<0?'Follow-up overdue':'Follow-up due', style:T.urgent}); }
+    if (checkInDue){ score += 75; reasons.push({label:'Check-in overdue', style:T.urgent}); }
+    if (rd!=null && rd<0){ score += 95; reasons.push({label:'Renewal passed', style:T.urgent}); }
+    else if (rd!=null && rd<=90){ score += rd<=30?85:50; reasons.push({label: rd<=0?'Renews now':'Renews in '+rd+'d', style: rd<=30?T.urgent:T.warn}); }
+    if (inTransition){ score += 40; reasons.push({label:'In transition', style:T.accent}); }
+    if (transitionStartSuggest){ score += 25; reasons.push({label:'Set up transition workflow', style:T.accent}); }
+    if (g.priority){ score += 110; reasons.push({label:'Flagged', style:T.warn}); }
+    const monitorDue = !!g.monitorMonthly && (g.lastMonitor==null || this._daysUntil(g.lastMonitor) <= -30);
+    if (monitorDue){ score += 70; reasons.push({label:'Monthly monitor', style:T.warn}); }
+    if (wfOverdue>0){ score += 90; reasons.push({label: wfOverdue+' task'+(wfOverdue>1?'s':'')+' overdue', style:T.urgent}); }
+    else if (wfDueSoon>0){ score += 45; reasons.push({label: wfDueSoon+' task'+(wfDueSoon>1?'s':'')+' due', style:T.warn}); }
+    if (renewalStartSuggest){ score += 55; reasons.push({label:'Start renewal workflow', style:T.accent}); }
+    if (g.employees) score += Number(g.employees)*0.4;
+
+    // ---- snooze + open-enrollment windows (uses BM-chosen OE dates, falls back to renewal) ----
+    const snz = this._daysUntil(g.snoozedUntil);
+    const snoozed = snz!=null && snz>0;
+    const oeAnchor = g.oeStartDate || g.renewalDate;
+    const oeDays = this._daysUntil(oeAnchor);
+    const oeEndDays = this._daysUntil(g.oeEndDate);
+    let oeWindow = 'future';
+    if (oeDays==null) oeWindow='none';
+    else if (oeEndDays!=null && oeEndDays<0) oeWindow='passed';
+    else if (oeDays<0) oeWindow = (oeEndDays!=null && oeEndDays>=0) ? 'now' : 'passed';
+    else if (oeDays<=45) oeWindow='now';
+    else if (oeDays<=90) oeWindow='soon';
+
+    // ---- single auto-generated "reach out" action ----
+    let actionDetail = '', dueText = '', dueTone = 'neutral';
+    if (followUpDue){ actionDetail = g.followUpNote ? ('Follow up — '+g.followUpNote) : 'Follow-up reminder is due'; dueText = fu<0 ? ('Overdue '+Math.abs(fu)+'d') : 'Due today'; dueTone='urgent'; }
+    else if (checkInDue){ actionDetail = 'Check-in overdue — time to reach back out'; dueText = 'Overdue '+Math.abs(ci)+'d'; dueTone='urgent'; }
+    else if (monitorDue){ actionDetail = 'Monthly eligibility monitor due — confirm enrolled count'; dueText = 'Monitor'; dueTone='warn'; }
+    else if (wfOverdue>0){ actionDetail = 'Workflow task overdue — '+(nextWfTask?nextWfTask.label:'see tasks'); dueText = wfOverdue+' overdue'; dueTone='urgent'; }
+    else if (renewalStartSuggest){ actionDetail = 'Renewal window open — start the renewal workflow'; dueText = 'Renews in '+rd+'d'; dueTone='warn'; }
+    else if (wfDueSoon>0){ actionDetail = 'Workflow task coming due — '+(nextWfTask?nextWfTask.label:'see tasks'); dueText = 'Task due'; dueTone='warn'; }
+    else if (rd!=null && rd<0){ actionDetail = 'Plan date has passed — confirm the renewal'; dueText = Math.abs(rd)+'d ago'; dueTone='urgent'; }
+    else if (oeWindow==='now'){ actionDetail = 'Open enrollment is open — help finalize elections'; dueText = 'OE in '+rd+'d'; dueTone='warn'; }
+    else if (inTransition){
+      actionDetail = hasTransitionWf ? 'Continue the transition workflow' : 'Set up the transition — attach the workflow';
+      dueText = g.transitionTimeline ? ('Window '+g.transitionTimeline) : 'In transition'; dueTone='accent';
+    }
+    else if (g.priority){ actionDetail = 'Flagged for attention'; dueText = 'Flagged'; dueTone='warn'; }
+    else { actionDetail = 'Review account'; dueText = ''; dueTone='neutral'; }
+    const toneColor = { urgent:'oklch(0.52 0.17 28)', warn:'oklch(0.5 0.12 65)', accent:'var(--accent,#3a5a8c)', neutral:'#9a968e' };
+    const dueColor = toneColor[dueTone] || toneColor.neutral;
+
+    const expandedN = this.state.expanded || {};
+    const notesView = (g.notes||[]).map(n => {
+      const tag = n.type==='Call'?T.accent : n.type==='Email'?T.good : n.type==='Meeting'?T.warn : n.type==='Check-in'?T.good : n.type==='Monitor'?T.warn : T.neutral;
+      const text = n.text||'';
+      const isLong = text.length>220 || text.split('\n').length>4;
+      const exp = !!expandedN['note_'+n.id];
+      const shown = (isLong && !exp) ? text.slice(0,200).replace(/\s+\S*$/,'')+'…' : text;
+      return { id:n.id, type:n.type, text:shown, isLong, expanded:exp, toggleKey:'note_'+n.id, moreLabel: exp?'Show less ▲':'Show more ▾', dateText:this._fmt(n.date), tagStyle:tag };
+    });
+
+    // ---- plans offered (grouped) ----
+    const offered = Array.isArray(g.plansOffered) ? g.plansOffered : [];
+    const planFamilies = (window.PLAN_FAMILIES||[]).map(fam => ({
+      name: fam.name,
+      countText: fam.plans.filter(p=>offered.includes(p)).length + '/' + fam.plans.length,
+      plans: fam.plans.map(p => {
+        const on = offered.includes(p);
+        return { plan:p, checked:on, check: on?'✓':'',
+          rowStyle:'display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:12.5px;'+(on?'background:oklch(0.96 0.03 255)':'background:transparent'),
+          boxStyle:'width:16px;height:16px;border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;border:1.5px solid '+(on?'var(--accent,#3a5a8c)':'#cbc6bb')+';background:'+(on?'var(--accent,#3a5a8c)':'#fff'),
+          labelStyle:'color:'+(on?'#2a2722':'#6f6c66')
+        };
+      })
+    }));
+    const plansOfferedCount = offered.length;
+    const allPlanNames = (window.PLAN_FAMILIES||[]).flatMap(f=>f.plans);
+    const selectedPlans = allPlanNames.filter(p=>offered.includes(p));
+
+    // ---- workflows (detailed for rendering) ----
+    const expanded = this.state.expanded || {};
+    const workflows = (g.workflows||[]).map(w => {
+      let total=0, done=0;
+      const sections = (w.sections||[]).map(sec => ({
+        name: sec.name, wf:w.id, sec:sec.name,
+        tasks: (sec.tasks||[]).map(t => {
+          total++; const isDone=!!t.completed; if(isDone) done++;
+          const du=this._daysUntil(t.due);
+          const dueText = !t.due ? 'set date' : (du<0?Math.abs(du)+'d ago':du===0?'today':'in '+du+'d');
+          const dueColor = isDone? '#b3afa6' : !t.due? '#c5c0b4' : du<0? 'oklch(0.52 0.17 28)' : du<=7? 'oklch(0.5 0.12 65)' : '#8a877f';
+          return { id:t.id, wf:w.id, label:t.label, completed:isDone,
+            checkStyle:'width:19px;height:19px;border-radius:5px;border:1.5px solid '+(isDone?'var(--accent,#3a5a8c)':'#cbc6bb')+';background:'+(isDone?'var(--accent,#3a5a8c)':'#fff')+';color:#fff;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;padding:0;line-height:1',
+            check: isDone?'✓':'',
+            labelStyle:'font-size:13px;flex:1;min-width:0;'+(isDone?'color:#b3afa6;text-decoration:line-through':'color:#3a3833'),
+            dueText, dueStyle:'color:'+dueColor+';font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600',
+            dueEdit:t.due||'', assignedEdit:t.assigned||'', completedText: t.completed? this._fmt(t.completed):'—', reminderEdit:t.reminder||'', noteEdit:t.note||'',
+            expanded: !!expanded[t.id], chev: expanded[t.id]?'▾ less':'⋯ details'
+          };
+        })
+      }));
+      const pct = total? Math.round(done/total*100):0;
+      return { id:w.id, title:w.title, type:w.type, startedText:this._fmt(w.startedDate),
+        countText: done+'/'+total, pct, pctStyle:'width:'+pct+'%;height:100%;background:var(--accent,#3a5a8c);border-radius:3px', sections };
+    });
+    const hasWorkflows = workflows.length>0;
+    // template options for the attach dropdown
+    const tplOptions = (this.state.templates||[]).map(t => ({ id:t.id, title:t.title }));
+
+    return {
+      id:g.id, group:g.group, currentBM:g.currentBM, priority:g.priority,
+      planFamilies, plansOfferedCount, selectedPlans, hasPlansSelected:selectedPlans.length>0, noPlansSelected:selectedPlans.length===0,
+      workflows, hasWorkflows, noWorkflows: !hasWorkflows, tplOptions, renewalStartSuggest,
+      status:g.status, statusLabel:st.label,
+      statusDotStyle:'width:8px;height:8px;border-radius:50%;flex:none;background:'+st.color,
+      statusTextStyle:'color:'+st.color,
+      starStyle: starBase + (star?starOn:starOff) + 'font-size:16px;',
+      starStyleLg: starBase + (star?starOn:starOff) + 'font-size:26px;',
+      renewalText:this._fmt(g.renewalDate), renewalSub, renewalMonth:g.renewalMonth,
+      renewalCellStyle:'color:'+renewalTone, renewalDays: rd,
+      pctStyle:'width:'+wfPct+'%;height:100%;background:var(--accent,#3a5a8c);border-radius:3px',
+      transitionStep: wfCount? (wfDoneAll+'/'+wfTotalAll+' tasks') : '—', wfCount,
+      inTransition, transitionComplete: !inTransition,
+      headerRel: inTransition ? ('Transitioning from '+g.currentBM) : 'Active account',
+      cadenceLabel,
+      nextCheckInText:checkInText, checkInDue, checkInStyle:'color:'+checkInColor,
+      followUpText, hasFollowUp, followUpDue, followUpNote:g.followUpNote||'', followUpStyle:'color:'+followUpColor, followUpDays: fu,
+      employees:g.employees, employeesText: g.employees==null?'—':(g.employees+' EE'),
+      reasons, score, snoozed,
+      actionDetail, dueText, dueStyle:'color:'+dueColor,
+      barStyle:'width:3px;flex:none;background:'+dueColor+';border-radius:3px',
+      oeWindow,
+      snoozedUntilText: g.snoozedUntil ? this._fmt(g.snoozedUntil) : '', snoozedDays: snz,
+      // account-management fields
+      salesforceLink:g.salesforceLink||'', hasSalesforce:!!(g.salesforceLink && g.salesforceLink.trim()), salesforceLinkEdit:g.salesforceLink||'',
+      gcRoleEdit:g.gcRole||'',
+      fteEdit: g.fte==null?'':String(g.fte), activeOnPlansEdit: g.activeOnPlans==null?'':String(g.activeOnPlans),
+      nhoStatus:g.nhoStatus||'', nhoNoteEdit:g.nhoNote||'',
+      introEmailEdit:g.introEmailDate||'', warmHandoffDateEdit:g.warmHandoffDate||'',
+      watchOuts:g.watchOuts||'', hasWatchOuts:!!(g.watchOuts && g.watchOuts.trim()), watchOutsEdit:g.watchOuts||'', monitorMonthly:!!g.monitorMonthly,
+      lastMonitorText: g.lastMonitor?this._fmt(g.lastMonitor):'Never', monitorDue,
+      monitorBadgeStyle: monitorDue ? 'background:oklch(0.93 0.06 28);color:oklch(0.5 0.16 28)' : 'background:oklch(0.93 0.05 145);color:oklch(0.42 0.1 150)',
+      oeMode:g.oeMode||'undecided', oeWindowEdit:g.oeWindow||'', asaSigned:!!g.asaSigned, oeDecisionNoteEdit:g.oeDecisionNote||'',
+      oeStartEdit:g.oeStartDate||'', oeEndEdit:g.oeEndDate||'',
+      oeDateText: g.oeStartDate ? (this._fmt(g.oeStartDate) + (g.oeEndDate ? ' – '+this._fmt(g.oeEndDate) : '')) : 'Dates not set',
+      oeDays, oeSubText: (g.oeStartDate ? (oeDays<0 ? (oeEndDays!=null&&oeEndDays>=0?'open now':Math.abs(oeDays)+'d ago') : oeDays===0?'starts today':'in '+oeDays+'d') : (rd==null?'':rd<0?Math.abs(rd)+'d ago':'in '+rd+'d')),
+      oeMonthChip: g.oeStartDate ? this._monAbbr(g.oeStartDate) : (g.renewalMonth||''),
+      agentEdit:g.agent||'',
+      queueSub: 'from '+g.currentBM+' · renews '+this._fmt(g.renewalDate),
+      // edit fields
+      warmHandoff:g.warmHandoff, newContact:g.newContact, ownershipTaken:g.ownershipTaken, sfUpdated:g.sfUpdated, changeCompleted:g.changeCompleted,
+      employeesEdit: g.employees==null?'':String(g.employees),
+      stateEdit:g.state||'', platformEdit:g.platform||'', participationEdit:g.participation||'',
+      planRichnessEdit:g.planRichness||'', claimsFundEdit:g.claimsFund||'', plansEdit:g.plans||'', contributionsEdit:g.contributions||'',
+      contactNameEdit:g.contactName||'', contactEmailEdit:g.contactEmail||'', contactPhoneEdit:g.contactPhone||'',
+      cadence:g.cadence||'', isCustom:g.cadence==='custom', customDaysEdit: g.customCadenceDays==null?'':String(g.customCadenceDays),
+      lastCheckInText: g.lastCheckIn?this._fmt(g.lastCheckIn):'—', nextCheckInEdit:g.nextCheckIn||'',
+      followUpDateEdit:g.followUpDate||'', followUpNoteEdit:g.followUpNote||'',
+      fullOwnershipText: g.fullOwnership?this._fmt(g.fullOwnership):'—', commissionText: g.commissionEffective?this._fmt(g.commissionEffective):'—', transitionTimeline:g.transitionTimeline||'—',
+      notesView, hasNotes:notesView.length>0, noNotes:notesView.length===0
+    };
+  }
+
+  renderVals(){
+    const s = this.state;
+    const accentVar = this.props.accent || '#3a5a8c';
+    const managerName = this.props.managerName || 'Josh Gilbert';
+    const managerInitials = managerName.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+    const vms = s.groups.map(g => this.buildVM(g));
+    const byId = {}; vms.forEach(v => byId[v.id]=v);
+
+    const kReach = vms.filter(v=>v.score>0 && !v.snoozed).length;
+    const kOeNow = vms.filter(v=>v.oeWindow==='now').length;
+    const kOe90 = vms.filter(v=>v.oeWindow==='soon').length;
+    const kFollowups = vms.filter(v=>v.hasFollowUp).length;
+    const kFollowDue = vms.filter(v=>v.hasFollowUp && v.followUpDue).length;
+    const kFlagged = vms.filter(v=>v.priority).length;
+    const kTransition = vms.filter(v=>v.inTransition).length;
+
+    const reachOut = vms.filter(v=>v.score>0 && !v.snoozed).sort((a,b)=>b.score-a.score || a.group.localeCompare(b.group)).slice(0,12);
+    const oeNowList = vms.filter(v=>v.oeWindow==='now').sort((a,b)=>a.renewalDays-b.renewalDays);
+    const oe90List = vms.filter(v=>v.oeWindow==='soon').sort((a,b)=>a.renewalDays-b.renewalDays);
+    const followUpsList = vms.filter(v=>v.hasFollowUp).sort((a,b)=>a.followUpDays-b.followUpDays).slice(0,8);
+    const snoozedList = vms.filter(v=>v.snoozed).sort((a,b)=>a.snoozedDays-b.snoozedDays);
+    const kSnoozed = snoozedList.length;
+
+    const upNext = vms.filter(v=>v.renewalDays!=null && v.renewalDays>90).sort((a,b)=>a.renewalDays-b.renewalDays)[0];
+    const oeNextUpText = upNext ? (upNext.group+' · '+upNext.renewalText+' ('+upNext.renewalDays+'d out)') : null;
+
+    const todoTotal = kReach;
+    const dashSummary = todoTotal>0
+      ? (todoTotal+' '+(todoTotal===1?'group needs':'groups need')+' you to reach out · '+kOeNow+' in open enrollment now, '+kOe90+' approaching')
+      : ('You\u2019re caught up — '+kOe90+' groups approaching open enrollment');
+
+    // filters
+    const counts = {
+      all: vms.length,
+      reachout: kReach,
+      transition: kTransition,
+      oenow: kOeNow,
+      oe90: kOe90,
+      followup: kFollowups,
+      priority: kFlagged
+    };
+    const chipBase = 'padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;';
+    const chipActive = 'background:var(--accent,#3a5a8c);color:#fff;border:1px solid var(--accent,#3a5a8c);';
+    const chipIdle = 'background:#fff;color:#5a574f;border:1px solid #e0dcd3;';
+    const mk = (key,label) => ({ key, label, count:counts[key], style: chipBase + (s.listFilter===key?chipActive:chipIdle) });
+    const chips = [ mk('all','All'), mk('reachout','Reach out'), mk('oenow','Open enrollment'), mk('oe90','90 days out'), mk('transition','In transition'), mk('followup','Follow-ups'), mk('priority','Flagged') ];
+
+    let filtered = vms;
+    const f = s.listFilter;
+    if (f==='reachout') filtered = filtered.filter(v=>v.score>0 && !v.snoozed);
+    else if (f==='transition') filtered = filtered.filter(v=>v.inTransition);
+    else if (f==='oenow') filtered = filtered.filter(v=>v.oeWindow==='now');
+    else if (f==='oe90') filtered = filtered.filter(v=>v.oeWindow==='soon');
+    else if (f==='followup') filtered = filtered.filter(v=>v.hasFollowUp);
+    else if (f==='priority') filtered = filtered.filter(v=>v.priority);
+    const q = s.search.trim().toLowerCase();
+    if (q) filtered = filtered.filter(v => v.group.toLowerCase().includes(q) || (v.currentBM||'').toLowerCase().includes(q));
+    if (s.sort==='name') filtered = [...filtered].sort((a,b)=>a.group.localeCompare(b.group));
+    else if (s.sort==='renewal') filtered = [...filtered].sort((a,b)=>(a.renewalDays==null?99999:a.renewalDays)-(b.renewalDays==null?99999:b.renewalDays));
+    else if (s.sort==='employees') filtered = [...filtered].sort((a,b)=>(b.employees||0)-(a.employees||0));
+    else filtered = [...filtered].sort((a,b)=>b.score-a.score || a.group.localeCompare(b.group));
+
+    const titles = {
+      dashboard:['Dashboard', 'Your book of business at a glance'],
+      groups:['All Groups', s.groups.length+' groups assigned to you'],
+      templates:['Workflow templates', 'Edit the checklists you attach to groups'],
+      detail:['Group', '']
+    };
+    const sg = s.selectedId ? byId[s.selectedId] : null;
+    if (sg){
+      sg.detailsToggleLabel = s.sections.details ? '▲ hide' : '▼ show fields';
+      sg.watchToggleLabel = s.sections.watch ? '▲ hide' : '▼ edit';
+      sg.oeToggleLabel = (s.sections.oe !== false) ? '▲ hide' : '▼ show';
+      sg.plansToggleLabel = s.sections.plans ? '▲ hide' : '▼ show';
+    }
+    const tt = sg ? ['Group detail', ''] : (titles[s.view] || titles.dashboard);
+
+    const navBase = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;font-size:13.5px;font-weight:500;cursor:pointer;border:none;width:100%;text-align:left;';
+    const navOn = 'background:var(--accent,#3a5a8c);color:#fff;';
+    const navOff = 'background:transparent;color:#4a473f;';
+
+    return {
+      accentVar, managerName, managerInitials,
+      viewTitle: tt[0], viewSubtitle: tt[1],
+      todayText: this._fmt(this._todayISO()),
+      search: s.search, onSearch: this.onSearch,
+      goDashboard:this.goDashboard, goGroups:this.goGroups,
+      goReach:this.goReach, goTransition:this.goTransition, goOeNow:this.goOeNow, goOe90:this.goOe90, goFollow:this.goFollow, goFlagged:this.goFlagged,
+      goTemplates:this.goTemplates,
+      navDashStyle: navBase + (s.view==='dashboard'?navOn:navOff),
+      navGroupsStyle: navBase + ((s.view==='groups'||s.view==='detail')?navOn:navOff),
+      navTplStyle: navBase + (s.view==='templates'?navOn:navOff),
+      totalCount: s.groups.length, miniReach:kReach, miniTransition:kTransition, miniOeNow:kOeNow, miniOe90:kOe90, miniFollow:kFollowups, miniFlagged:kFlagged,
+
+      dashReady: s.loaded && s.view==='dashboard',
+      groupsReady: s.loaded && s.view==='groups',
+      detailReady: s.loaded && s.view==='detail' && !!sg,
+      templatesReady: s.loaded && s.view==='templates',
+      templatesVM: (s.templates||[]).map(t => ({
+        id:t.id, title:t.title, type:t.type, builtin:!!t.builtin, custom: !t.builtin, editing: s.editTplId===t.id,
+        editLabel: s.editTplId===t.id?'Done':'Edit',
+        taskTotal: (t.sections||[]).reduce((a,sec)=>a+sec.tasks.length,0),
+        anchorText: t.anchor==='renewal'?'Auto-dates from renewal date':t.anchor==='oe'?'Auto-dates from OE start':'Manual dates',
+        showOffset: t.anchor!=null,
+        sections: (t.sections||[]).map((sec,si)=>({ name:sec.name, idx:si, tpl:t.id,
+          tasks: (sec.tasks||[]).map((tk,ti)=>({ label:tk.label, offset: tk.offset==null?'':String(tk.offset), idx:ti, sec:si, tpl:t.id })) }))
+      })),
+      goTemplatesView:this.goTemplates, editTemplate:this.editTemplate, tplRenameTitle:this.tplRenameTitle,
+      tplTaskField:this.tplTaskField, tplAddTask:this.tplAddTask, tplRemoveTask:this.tplRemoveTask,
+      tplAddSection:this.tplAddSection, tplRemoveSection:this.tplRemoveSection, tplSectionName:this.tplSectionName,
+      tplAddCustom:this.tplAddCustom, tplDelete:this.tplDelete, tplReset:this.tplReset,
+      togglePlan:this.togglePlan, attachWorkflow:this.attachWorkflow, removeWorkflow:this.removeWorkflow,
+      toggleTask:this.toggleTask, setTaskField:this.setTaskField, removeTask:this.removeTask, addTask:this.addTask, toggleTaskExpand:this.toggleTaskExpand,
+
+      kTotal:s.groups.length, kReach, kOeNow, kOe90, kFollowups, kFollowDue, kFlagged, kTransition,
+      setFilter:this.setFilter, dashSummary,
+
+      hasReach: reachOut.length>0, reachEmpty: s.loaded && reachOut.length===0,
+      reachOut, reachCount: reachOut.length,
+      openGroup:this.openGroup, togglePriority:this.togglePriority, snoozeReminder:this.snoozeReminder,
+      hasFollowUps: followUpsList.length>0, noFollowUps: followUpsList.length===0,
+      followUpsList, followUpCount: kFollowups,
+      hasOeNow: oeNowList.length>0, noOeNow: oeNowList.length===0, oeNowList, oeNowCount:kOeNow,
+      hasOe90: oe90List.length>0, noOe90: oe90List.length===0, oe90List, oe90Count:kOe90,
+      oeNextUpText, hasOeNextUp: !!oeNextUpText, noOeNextUp: !oeNextUpText,
+
+      theme:s.theme, isDark:s.theme==='dark', toggleTheme:this.toggleTheme, themeLabel: s.theme==='dark'?'Light':'Dark', themeIcon: s.theme==='dark'?'☀':'☾',
+      detailsOpen: !!s.sections.details, watchOpen: !!s.sections.watch, oeOpen: s.sections.oe !== false, plansOpen: !!s.sections.plans, toggleSection:this.toggleSection,
+      showAddGroup:s.showAddGroup, toggleAddGroup:this.toggleAddGroup, createGroup:this.createGroup, stop:(e)=>e.stopPropagation(),
+      ngName:this.ng.name, ngFromBM:this.ng.fromBM, ngRenewal:this.ng.renewal, ngEmployees:this.ng.employees, ngStatus:this.ng.status,
+      snoozedList, kSnoozed, hasSnoozed:kSnoozed>0, showSnoozed:s.showSnoozed, toggleSnoozed:this.toggleSnoozed, unsnooze:this.unsnooze,
+      logMonitor:this.logMonitor,
+      showIntake:s.showIntake, toggleIntake:this.toggleIntake, parseIntake:this.parseIntake, intakeText:this.intakeText,
+      showCheckin:s.showCheckin, toggleCheckin:this.toggleCheckin, saveCheckin:this.saveCheckin,
+      ciBusiness:this.ci.business, ciService:this.ci.service, ciFte:this.ci.fte, ciNho:this.ci.nho, ciProduct:this.ci.product, ciNeeds:this.ci.needs, ciClaims:this.ci.claims,
+
+      chips, setListFilter:this.setListFilter, sort:s.sort, setSort:this.setSort,
+      hasGroups: filtered.length>0, noGroups: filtered.length===0, groupsFiltered: filtered,
+
+      back:this.back, sg,
+      handleField:this.handleField, handleCheck:this.handleCheck, handleCadence:this.handleCadence,
+      addNote:this.addNote, deleteNote:this.deleteNote, logCheckIn:this.logCheckIn, clearFollowUp:this.clearFollowUp,
+      noteText:this.noteText, noteType:this.noteType
+    };
+  }
+}
+</script>
+</body>
+</html>

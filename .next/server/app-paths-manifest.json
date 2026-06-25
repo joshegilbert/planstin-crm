@@ -1,9 +1,0 @@
-{
-  "/(crm)/dashboard/page": "app/(crm)/dashboard/page.js",
-  "/(crm)/groups/page": "app/(crm)/groups/page.js",
-  "/(crm)/templates/page": "app/(crm)/templates/page.js",
-  "/api/groups/route": "app/api/groups/route.js",
-  "/api/templates/[id]/route": "app/api/templates/[id]/route.js",
-  "/api/templates/route": "app/api/templates/route.js",
-  "/page": "app/page.js"
-}

@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #3a5a8c;
+  --accent-hover: #2d4870;
+  --sidebar: oklch(0.16 0.025 250);
+  --surface: oklch(0.98 0 0);
+  --surface-2: oklch(0.94 0 0);
+  --border: oklch(0.88 0 0);
+  --text: oklch(0.15 0 0);
+  --text-muted: oklch(0.45 0 0);
+  --text-sidebar: rgba(255, 255, 255, 0.85);
+}
+
+.dark {
+  --surface: oklch(0.14 0 0);
+  --surface-2: oklch(0.18 0 0);
+  --border: oklch(0.25 0 0);
+  --text: oklch(0.92 0 0);
+  --text-muted: oklch(0.6 0 0);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+textarea,
+input,
+select {
+  font-family: inherit;
+}

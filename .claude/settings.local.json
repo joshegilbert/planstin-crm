@@ -4,7 +4,15 @@
       "Bash(python3 -m http.server 7821)",
       "Bash(echo \"PID=$!\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:7821/)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest *)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(xargs ls)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(echo \"EXIT_CODE: $?\")"
     ]
   }
 }

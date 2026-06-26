@@ -12,7 +12,9 @@
       "Bash(xargs ls)",
       "Bash(npm run *)",
       "Bash(curl -s http://localhost:3000)",
-      "Bash(echo \"EXIT_CODE: $?\")"
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }

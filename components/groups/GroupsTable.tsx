@@ -9,11 +9,12 @@ interface GroupsTableProps {
 
 const columns = [
   { label: 'Group', flex: true },
-  { label: 'From BM', width: 120 },
-  { label: 'Open enrollment', width: 140 },
-  { label: 'Workflows', width: 130 },
-  { label: 'Next contact', width: 120 },
-  { label: 'Status', width: 130 },
+  { label: 'From BM', width: 100 },
+  { label: 'Handoff', width: 110 },
+  { label: 'Reach-out', width: 130 },
+  { label: 'Open enrollment', width: 120 },
+  { label: 'Next contact', width: 110 },
+  { label: 'Status', width: 120 },
   { label: '★', width: 44 },
 ]
 

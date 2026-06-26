@@ -32,6 +32,16 @@ export default function GroupRow({ group: g }: GroupRowProps) {
 
   const oeBadge = oeWindowBadge[g.oeWindow]
 
+  const handoffDate = g.commissionEffective || g.fullOwnership || g.warmHandoffDate
+  const handoffDays = daysUntil(handoffDate)
+
+  const reachOutColor: Record<string, string> = {
+    urgent: 'oklch(0.47 0.16 30)',
+    warn: 'oklch(0.55 0.13 65)',
+    accent: 'var(--accent)',
+    neutral: 'var(--text-muted)',
+  }
+
   return (
     <div
       onClick={() => router.push(`/groups/${g.id}`)}
@@ -46,13 +56,44 @@ export default function GroupRow({ group: g }: GroupRowProps) {
       </div>
 
       {/* From BM */}
-      <div className="text-sm text-ink-faint truncate" style={{ width: 120, flexShrink: 0 }}>
+      <div className="text-xs text-ink-faint truncate" style={{ width: 100, flexShrink: 0 }}>
         {g.currentBM || '—'}
       </div>
 
+      {/* Handoff */}
+      <div style={{ width: 110, flexShrink: 0 }}>
+        {handoffDate ? (
+          <>
+            <div className="text-xs text-ink">{fmt(handoffDate)}</div>
+            {handoffDays !== null && (
+              <div className="text-[10px] text-ink-faint">
+                {handoffDays < 0
+                  ? `${Math.abs(handoffDays)}d ago`
+                  : handoffDays === 0
+                  ? 'today'
+                  : `in ${handoffDays}d`}
+              </div>
+            )}
+          </>
+        ) : (
+          <span className="text-xs text-ink-faint">—</span>
+        )}
+      </div>
+
+      {/* Reach-out */}
+      <div style={{ width: 130, flexShrink: 0 }}>
+        {g.dueText ? (
+          <span className="text-xs font-medium" style={{ color: reachOutColor[g.dueTone] }}>
+            {g.dueText}
+          </span>
+        ) : (
+          <span className="text-xs text-ink-faint">—</span>
+        )}
+      </div>
+
       {/* Open enrollment */}
-      <div style={{ width: 140, flexShrink: 0 }}>
-        <div className="text-xs text-ink-faint">{g.oeDateText}</div>
+      <div style={{ width: 120, flexShrink: 0 }}>
+        <div className="text-xs text-ink-faint">{g.oeDateText !== 'Dates not set' ? g.oeDateText : '—'}</div>
         {oeBadge.label && (
           <span className={`inline-flex text-[10px] px-1.5 py-0.5 rounded-full font-medium mt-0.5 ${oeBadge.cls}`}>
             {oeBadge.label}
@@ -60,27 +101,8 @@ export default function GroupRow({ group: g }: GroupRowProps) {
         )}
       </div>
 
-      {/* Workflows */}
-      <div style={{ width: 130, flexShrink: 0 }}>
-        {g.wfTotalAll > 0 ? (
-          <div>
-            <div className="h-1.5 w-full bg-line rounded-full overflow-hidden mb-1">
-              <div
-                className="bg-accent h-full transition-all"
-                style={{ width: `${g.wfPct}%` }}
-              />
-            </div>
-            <div className="text-xs text-ink-faint">
-              {g.wfDoneAll}/{g.wfTotalAll} tasks
-            </div>
-          </div>
-        ) : (
-          <span className="text-xs text-ink-faint">—</span>
-        )}
-      </div>
-
       {/* Next contact */}
-      <div style={{ width: 120, flexShrink: 0 }}>
+      <div style={{ width: 110, flexShrink: 0 }}>
         {nextContact ? (
           <span className={`text-xs ${nextContactOverdue ? 'text-[oklch(0.47_0.16_30)] font-medium' : 'text-ink-faint'}`}>
             {fmt(nextContact)}
@@ -91,7 +113,7 @@ export default function GroupRow({ group: g }: GroupRowProps) {
       </div>
 
       {/* Status */}
-      <div style={{ width: 130, flexShrink: 0 }}>
+      <div style={{ width: 120, flexShrink: 0 }}>
         <StatusBadge status={g.status} />
       </div>
 

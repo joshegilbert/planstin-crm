@@ -1,5 +1,5 @@
 'use client'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import type { Group } from '@/types'
 
 async function fetchGroup(id: string): Promise<Group> {
@@ -13,5 +13,6 @@ export function useGroup(id: string | null) {
     queryKey: ['group', id],
     queryFn: () => fetchGroup(id!),
     enabled: !!id,
+    placeholderData: keepPreviousData,
   })
 }

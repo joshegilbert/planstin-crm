@@ -39,6 +39,7 @@ function SidebarInner() {
     { label: 'Dashboard', href: '/dashboard' },
     { label: 'All Groups', href: '/groups' },
     { label: 'Workflows', href: '/templates' },
+    { label: 'Settings', href: '/settings' },
   ]
 
   const pipelineItems = [
@@ -54,6 +55,7 @@ function SidebarInner() {
     if (href === '/dashboard') return pathname === '/dashboard'
     if (href === '/groups') return pathname.startsWith('/groups')
     if (href === '/templates') return pathname.startsWith('/templates')
+    if (href === '/settings') return pathname.startsWith('/settings')
     return false
   }
 

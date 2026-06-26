@@ -1,4 +1,7 @@
-import type { Group, Note, Workflow, WorkflowSection, WorkflowTask, WorkflowTemplate } from '@/types'
+import type {
+  Group, Note, Workflow, WorkflowSection, WorkflowTask, WorkflowTemplate,
+  GroupContact, Reminder, ClaimLogEntry, PlanCatalogItem, CheckInEntry,
+} from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function transformGroup(row: any): Group {
@@ -32,6 +35,8 @@ export function transformGroup(row: any): Group {
     plans: row.plans || '',
     platform: row.platform || '',
     plansOffered: row.plans_offered || [],
+    planYear: row.plan_year ?? null,
+    websiteUrl: row.website_url || '',
     contactName: row.contact_name || '',
     contactEmail: row.contact_email || '',
     contactPhone: row.contact_phone || '',
@@ -65,6 +70,68 @@ export function transformNote(row: any): Note {
     type: row.type,
     text: row.text,
     date: row.date,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformContact(row: any): GroupContact {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    name: row.name || '',
+    role: row.role || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    isPrimary: row.is_primary ?? false,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformReminder(row: any): Reminder {
+  return {
+    id: row.id,
+    groupId: row.group_id || null,
+    triggerDate: row.trigger_date,
+    note: row.note || '',
+    completed: row.completed ?? false,
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformClaimEntry(row: any): ClaimLogEntry {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    logDate: row.log_date,
+    claimsPaid: Number(row.claims_paid) || 0,
+    claimsFund: Number(row.claims_fund) || 0,
+    note: row.note || '',
+    createdAt: row.created_at,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformPlanCatalogItem(row: any): PlanCatalogItem {
+  return {
+    id: row.id,
+    planYear: row.plan_year,
+    familyName: row.family_name,
+    planName: row.plan_name,
+    sortOrder: row.sort_order,
+    isActive: row.is_active ?? true,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function transformCheckIn(row: any): CheckInEntry {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    checkedIn: row.checked_in,
+    source: row.source || 'manual',
     createdAt: row.created_at,
   }
 }
@@ -132,7 +199,6 @@ export function transformTemplate(row: any): WorkflowTemplate {
   }
 }
 
-// Convert camelCase Group patch to snake_case DB columns
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function groupPatchToDb(patch: Record<string, any>): Record<string, any> {
   const map: Record<string, string> = {
@@ -164,6 +230,8 @@ export function groupPatchToDb(patch: Record<string, any>): Record<string, any> 
     plans: 'plans',
     platform: 'platform',
     plansOffered: 'plans_offered',
+    planYear: 'plan_year',
+    websiteUrl: 'website_url',
     contactName: 'contact_name',
     contactEmail: 'contact_email',
     contactPhone: 'contact_phone',

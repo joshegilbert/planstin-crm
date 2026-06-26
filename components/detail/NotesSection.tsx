@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Group, NoteType } from '@/types'
 import { fmt } from '@/lib/dates'
-import { useAddNote, useDeleteNote } from '@/hooks/useNotes'
+import { useAddNote, useUpdateNote, useDeleteNote } from '@/hooks/useNotes'
 import { useUIStore } from '@/lib/store'
 import { parseIntake } from '@/lib/intake-parser'
 import { Modal } from '@/components/ui/Modal'
@@ -12,20 +12,54 @@ interface NotesSectionProps {
   onUpdate: (patch: Partial<Group>) => void
 }
 
-const NOTE_TYPE_STYLES: Record<NoteType, { background: string; color: string }> = {
-  Call: { background: 'oklch(0.95 0.03 250)', color: 'oklch(0.44 0.11 255)' },
-  Email: { background: 'oklch(0.95 0.04 155)', color: 'oklch(0.40 0.09 155)' },
-  Meeting: { background: 'oklch(0.96 0.05 80)', color: 'oklch(0.46 0.11 65)' },
-  'Check-in': { background: 'oklch(0.95 0.04 155)', color: 'oklch(0.40 0.09 155)' },
-  Monitor: { background: 'oklch(0.96 0.05 80)', color: 'oklch(0.46 0.11 65)' },
-  Note: { background: '#f0eee8', color: '#6f6c66' },
+const NOTE_STYLES: Record<NoteType, { border: string; badge: string; text: string; icon: string }> = {
+  Call:      { border: 'oklch(0.75 0.12 255)', badge: 'oklch(0.95 0.03 250)', text: 'oklch(0.44 0.11 255)', icon: '📞' },
+  Email:     { border: 'oklch(0.75 0.10 155)', badge: 'oklch(0.95 0.04 155)', text: 'oklch(0.40 0.09 155)', icon: '✉' },
+  Meeting:   { border: 'oklch(0.75 0.12 65)',  badge: 'oklch(0.96 0.05 80)',  text: 'oklch(0.46 0.11 65)',  icon: '🗓' },
+  'Check-in':{ border: 'oklch(0.75 0.10 155)', badge: 'oklch(0.95 0.04 155)', text: 'oklch(0.40 0.09 155)', icon: '✓' },
+  Monitor:   { border: 'oklch(0.75 0.12 65)',  badge: 'oklch(0.96 0.05 80)',  text: 'oklch(0.46 0.11 65)',  icon: '👁' },
+  Note:      { border: '#d0cec8',              badge: '#f0eee8',              text: '#6f6c66',              icon: '📝' },
 }
 
 const NOTE_TYPES: NoteType[] = ['Call', 'Email', 'Meeting', 'Note']
 const MAX_CHARS = 220
 
+function AutoTextarea({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+  className?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto'
+      ref.current.style.height = ref.current.scrollHeight + 'px'
+    }
+  }, [value])
+
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={className}
+      style={{ resize: 'none', overflow: 'hidden', minHeight: '2.5rem' }}
+    />
+  )
+}
+
 export function NotesSection({ group, onUpdate }: NotesSectionProps) {
   const addNote = useAddNote(group.id)
+  const updateNote = useUpdateNote(group.id)
   const deleteNote = useDeleteNote(group.id)
   const expandedNotes = useUIStore((s) => s.expandedNotes)
   const toggleNoteExpanded = useUIStore((s) => s.toggleNoteExpanded)
@@ -34,6 +68,9 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
   const [intakeRaw, setIntakeRaw] = useState('')
   const [noteType, setNoteType] = useState<NoteType>('Call')
   const [noteText, setNoteText] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const notes = [...(group.notes || [])].sort((a, b) =>
     (b.date || '').localeCompare(a.date || ''),
@@ -56,17 +93,31 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
     setNoteText('')
   }
 
-  function handleDeleteNote(noteId: string) {
-    if (window.confirm('Delete this note?')) {
-      deleteNote.mutate(noteId)
-    }
+  function startEdit(noteId: string, currentText: string) {
+    setEditingId(noteId)
+    setEditText(currentText)
+  }
+
+  function saveEdit(noteId: string) {
+    if (!editText.trim()) return
+    updateNote.mutate({ noteId, text: editText.trim() })
+    setEditingId(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  function confirmDelete(noteId: string) {
+    deleteNote.mutate(noteId)
+    setConfirmDeleteId(null)
   }
 
   return (
     <div className="bg-canvas rounded-2xl border border-line shadow-sm p-5 mb-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-ink text-sm">Notes & call log</h2>
+        <h2 className="font-semibold text-ink text-sm">Activity</h2>
         <button
           onClick={() => setIntakeOpen(true)}
           className="text-xs px-3 py-1.5 rounded-lg border border-line text-ink-faint hover:text-accent hover:border-accent transition-colors"
@@ -75,47 +126,54 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
         </button>
       </div>
 
-      {/* Note composer */}
-      <div className="mb-5 space-y-2">
-        <div className="flex items-center gap-2">
-          <select
-            value={noteType}
-            onChange={(e) => setNoteType(e.target.value as NoteType)}
-            className="text-sm border border-line rounded-lg px-2 py-1.5 bg-canvas text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
-          >
-            {NOTE_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+      {/* Compose area */}
+      <div className="mb-5 rounded-xl border border-line bg-canvas-subtle p-3 space-y-2">
+        <div className="flex items-center gap-1.5">
+          {NOTE_TYPES.map((t) => (
+            <button
+              key={t}
+              onClick={() => setNoteType(t)}
+              className="text-xs px-2.5 py-1 rounded-full transition-colors"
+              style={
+                noteType === t
+                  ? { background: NOTE_STYLES[t].badge, color: NOTE_STYLES[t].text, fontWeight: 600 }
+                  : { color: 'var(--text-muted)' }
+              }
+            >
+              {NOTE_STYLES[t].icon} {t}
+            </button>
+          ))}
         </div>
-        <textarea
-          rows={3}
+        <AutoTextarea
           value={noteText}
-          onChange={(e) => setNoteText(e.target.value)}
-          placeholder="Write a note..."
-          className="w-full text-sm border border-line rounded-lg px-3 py-2 bg-canvas text-ink resize-none focus:outline-none focus:ring-2 focus:ring-accent/30"
+          onChange={setNoteText}
+          placeholder={`Log a ${noteType.toLowerCase()}...`}
+          className="w-full text-sm bg-transparent text-ink focus:outline-none placeholder:text-ink-faint"
         />
         <div className="flex justify-end">
           <button
             onClick={handleAddNote}
             disabled={!noteText.trim() || addNote.isPending}
-            className="text-sm px-4 py-2 rounded-xl text-white font-medium transition-opacity disabled:opacity-50"
+            className="text-xs px-4 py-1.5 rounded-lg text-white font-medium transition-opacity disabled:opacity-40"
             style={{ background: 'var(--accent)' }}
           >
-            Add note
+            Log {noteType}
           </button>
         </div>
       </div>
 
-      {/* Notes list */}
+      {/* Activity feed */}
       {notes.length === 0 ? (
-        <p className="text-sm text-ink-faint text-center py-4">No notes yet.</p>
+        <div className="text-center py-6">
+          <p className="text-sm text-ink-faint mb-1">No activity yet</p>
+          <p className="text-xs text-ink-faint">Log a call, email, or meeting above</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-1">
           {notes.map((note) => {
-            const style = NOTE_TYPE_STYLES[note.type] || NOTE_TYPE_STYLES.Note
+            const style = NOTE_STYLES[note.type] ?? NOTE_STYLES.Note
+            const isEditing = editingId === note.id
+            const isConfirmingDelete = confirmDeleteId === note.id
             const isLong = note.text.length > MAX_CHARS
             const isExpanded = !!expandedNotes[note.id]
             const displayText =
@@ -124,53 +182,114 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
             return (
               <div
                 key={note.id}
-                className="pb-3 border-b border-line last:border-0 last:pb-0"
+                className="flex gap-3 py-2.5 border-b border-line last:border-0 group"
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={style}
-                    >
-                      {note.type}
-                    </span>
-                    <span className="text-xs text-ink-faint">{fmt(note.date)}</span>
+                {/* Left: color indicator */}
+                <div
+                  className="w-0.5 flex-shrink-0 rounded-full mt-1 self-stretch"
+                  style={{ background: style.border, minHeight: '1.25rem' }}
+                />
+
+                <div className="flex-1 min-w-0">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-full"
+                        style={{ background: style.badge, color: style.text }}
+                      >
+                        {style.icon} {note.type}
+                      </span>
+                      <span className="text-xs text-ink-faint">{fmt(note.date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      {!isEditing && !isConfirmingDelete && (
+                        <>
+                          <button
+                            onClick={() => startEdit(note.id, note.text)}
+                            className="text-xs text-ink-faint hover:text-ink transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(note.id)}
+                            className="text-xs text-ink-faint hover:text-red-500 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                      {isConfirmingDelete && (
+                        <>
+                          <span className="text-xs text-ink-faint">Delete?</span>
+                          <button
+                            onClick={() => confirmDelete(note.id)}
+                            className="text-xs text-red-500 hover:underline"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-xs text-ink-faint hover:text-ink"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDeleteNote(note.id)}
-                    className="flex-shrink-0 text-ink-faint hover:text-red-500 transition-colors text-base leading-none"
-                    title="Delete note"
-                  >
-                    ×
-                  </button>
+
+                  {/* Body */}
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <AutoTextarea
+                        value={editText}
+                        onChange={setEditText}
+                        className="w-full text-sm border border-line rounded-lg px-3 py-2 bg-canvas text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEdit(note.id)}
+                          disabled={!editText.trim()}
+                          className="text-xs px-3 py-1.5 rounded-lg text-white font-medium disabled:opacity-50"
+                          style={{ background: 'var(--accent)' }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="text-xs px-3 py-1.5 rounded-lg border border-line text-ink-faint hover:text-ink transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-ink whitespace-pre-line leading-relaxed">
+                        {displayText}
+                      </p>
+                      {isLong && (
+                        <button
+                          onClick={() => toggleNoteExpanded(note.id)}
+                          className="text-xs text-accent hover:underline mt-1"
+                        >
+                          {isExpanded ? 'Show less' : 'Show more'}
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
-                <p className="text-sm text-ink whitespace-pre-line leading-relaxed">
-                  {displayText}
-                </p>
-                {isLong && (
-                  <button
-                    onClick={() => toggleNoteExpanded(note.id)}
-                    className="text-xs text-accent hover:underline mt-1"
-                  >
-                    {isExpanded ? 'Show less' : 'Show more'}
-                  </button>
-                )}
               </div>
             )
           })}
         </div>
       )}
 
-      {/* Intake modal */}
-      <Modal
-        open={intakeOpen}
-        onClose={() => setIntakeOpen(false)}
-        title="Paste intake notes"
-      >
+      <Modal open={intakeOpen} onClose={() => setIntakeOpen(false)} title="Paste intake notes">
         <div className="space-y-4">
           <p className="text-sm text-ink-faint">
-            Paste the transition intake notes below. Fields will be parsed and filled
-            automatically.
+            Paste the transition intake notes below. Fields will be parsed and filled automatically.
           </p>
           <textarea
             rows={12}

@@ -1,4 +1,5 @@
 'use client'
+import { useRouter } from 'next/navigation'
 import type { Group, GroupViewModel } from '@/types'
 import { fmt, isoPlus, todayISO } from '@/lib/dates'
 import { statusInfo } from '@/lib/scoring'
@@ -15,10 +16,10 @@ const STATUS_OPTIONS = [
 
 const TONE_STYLES: Record<string, { background: string; color: string }> = {
   urgent: { background: 'oklch(0.95 0.035 30)', color: 'oklch(0.47 0.16 30)' },
-  warn: { background: 'oklch(0.96 0.05 80)', color: 'oklch(0.46 0.11 65)' },
+  warn:   { background: 'oklch(0.96 0.05 80)',  color: 'oklch(0.46 0.11 65)' },
   accent: { background: 'oklch(0.95 0.03 250)', color: 'oklch(0.44 0.11 255)' },
-  good: { background: 'oklch(0.95 0.04 155)', color: 'oklch(0.40 0.09 155)' },
-  neutral: { background: '#f0eee8', color: '#6f6c66' },
+  good:   { background: 'oklch(0.95 0.04 155)', color: 'oklch(0.40 0.09 155)' },
+  neutral:{ background: '#f0eee8',              color: '#6f6c66' },
 }
 
 interface DetailHeaderProps {
@@ -28,6 +29,7 @@ interface DetailHeaderProps {
 }
 
 export function DetailHeader({ group, vm, onUpdate }: DetailHeaderProps) {
+  const router = useRouter()
   const si = statusInfo(group.status)
 
   const renewalYear = group.renewalDate
@@ -50,15 +52,21 @@ export function DetailHeader({ group, vm, onUpdate }: DetailHeaderProps) {
       <div className="flex items-start justify-between gap-4">
         {/* Left side */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold text-ink truncate mb-1">
+          <h1 className="text-2xl font-semibold text-ink truncate mb-2">
             {group.groupName}
           </h1>
-          <div className="flex items-center gap-3 flex-wrap mb-2">
+
+          {/* Status + meta row */}
+          <div className="flex items-center gap-2.5 flex-wrap mb-2">
             <select
               value={group.status}
               onChange={(e) => onUpdate({ status: e.target.value as Group['status'] })}
-              className="text-sm font-medium rounded-lg px-2 py-0.5 border border-line bg-canvas text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
-              style={{ color: si.color }}
+              className="text-xs font-semibold rounded-full px-3 py-1 border focus:outline-none focus:ring-2 focus:ring-accent/30 cursor-pointer"
+              style={{
+                color: si.color,
+                borderColor: si.color + '55',
+                background: si.color + '18',
+              }}
             >
               {STATUS_OPTIONS.map((s) => {
                 const info = statusInfo(s)
@@ -69,31 +77,39 @@ export function DetailHeader({ group, vm, onUpdate }: DetailHeaderProps) {
                 )
               })}
             </select>
+
+            {group.employees != null && (
+              <span className="text-xs text-ink-faint">
+                {group.employees.toLocaleString()} employees
+              </span>
+            )}
+
             {group.currentBM && (
-              <span className="text-sm text-ink-faint">from {group.currentBM}</span>
+              <span className="text-xs text-ink-faint">· {group.currentBM}</span>
+            )}
+
+            {(group.renewalMonth || group.renewalDate) && (
+              <span className="flex items-center gap-1 text-xs">
+                <span className="text-ink-faint">
+                  Renews {group.renewalMonth}
+                  {renewalYear ? ` ${renewalYear}` : ''}
+                </span>
+                {vm.renewalSub && (
+                  <span className="font-medium" style={{ color: renewalSubColor }}>
+                    ({vm.renewalSub})
+                  </span>
+                )}
+              </span>
             )}
           </div>
-          {(group.renewalMonth || group.renewalDate) && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-ink-faint">
-                Renews {group.renewalMonth}
-                {renewalYear ? ` ${renewalYear}` : ''}
-              </span>
-              {vm.renewalSub && (
-                <span className="text-xs font-medium" style={{ color: renewalSubColor }}>
-                  ({vm.renewalSub})
-                </span>
-              )}
-            </div>
-          )}
 
           {/* Action detail */}
           {vm.score > 0 && vm.actionDetail && (
-            <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap mt-2">
               <span className="text-sm text-ink">{vm.actionDetail}</span>
               {vm.dueText && (
                 <span
-                  className="text-xs font-medium px-2 py-0.5 rounded-full"
+                  className="text-xs font-medium px-2.5 py-0.5 rounded-full"
                   style={toneStyle}
                 >
                   {vm.dueText}
@@ -104,20 +120,30 @@ export function DetailHeader({ group, vm, onUpdate }: DetailHeaderProps) {
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Priority star */}
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+          <button
+            onClick={() => router.push(`/groups/${group.id}/prep`)}
+            className="text-sm px-3 py-1.5 rounded-lg border border-line text-ink-faint hover:text-ink hover:border-ink-faint transition-colors"
+          >
+            Meeting prep
+          </button>
+
           <button
             onClick={() => onUpdate({ priority: !group.priority })}
             title={group.priority ? 'Remove priority flag' : 'Flag as priority'}
-            className="text-xl hover:scale-110 transition-transform"
+            className="text-sm px-2.5 py-1.5 rounded-lg border transition-colors"
+            style={
+              group.priority
+                ? { background: 'oklch(0.96 0.05 80)', borderColor: 'oklch(0.80 0.10 65)', color: 'oklch(0.46 0.11 65)' }
+                : { borderColor: 'var(--border)', color: 'var(--text-muted)' }
+            }
           >
-            {group.priority ? '⭐' : '☆'}
+            {group.priority ? '⚑ Priority' : 'Flag'}
           </button>
 
-          {/* Snooze / unsnooze */}
           {group.snoozedUntil && vm.snoozed ? (
-            <div className="flex items-center gap-1 text-xs text-ink-faint bg-canvas-subtle rounded-lg px-2 py-1 border border-line">
-              <span>💤 Snoozed until {fmt(group.snoozedUntil)}</span>
+            <div className="flex items-center gap-1 text-xs text-ink-faint bg-canvas-subtle rounded-lg px-2.5 py-1.5 border border-line">
+              <span>Snoozed until {fmt(group.snoozedUntil)}</span>
               <button
                 onClick={() => onUpdate({ snoozedUntil: null })}
                 className="ml-1 hover:text-ink"
@@ -130,21 +156,20 @@ export function DetailHeader({ group, vm, onUpdate }: DetailHeaderProps) {
             <button
               onClick={() => onUpdate({ snoozedUntil: isoPlus(todayISO(), 7) })}
               title="Snooze for 7 days"
-              className="text-sm text-ink-faint hover:text-ink px-2 py-1 rounded-lg border border-line hover:border-ink-faint transition-colors"
+              className="text-sm text-ink-faint hover:text-ink px-2.5 py-1.5 rounded-lg border border-line hover:border-ink-faint transition-colors"
             >
-              💤 7d
+              Snooze 7d
             </button>
           )}
 
-          {/* Salesforce link */}
           {group.salesforceLink && (
             <a
               href={group.salesforceLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm px-3 py-1 rounded-lg border border-line text-ink-faint hover:text-ink hover:border-ink-faint transition-colors"
+              className="text-sm px-3 py-1.5 rounded-lg border border-line text-ink-faint hover:text-ink hover:border-ink-faint transition-colors"
             >
-              Open in SF ↗
+              Salesforce ↗
             </a>
           )}
         </div>

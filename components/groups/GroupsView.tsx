@@ -46,6 +46,32 @@ function applySort(groups: GroupViewModel[], sort: SortOption): GroupViewModel[]
       })
     case 'employees':
       return sorted.sort((a, b) => (b.employees ?? 0) - (a.employees ?? 0))
+    case 'reachout-window':
+      return sorted.sort((a, b) => {
+        const aDate = a.followUpDate || a.nextCheckIn || a.renewalDate || ''
+        const bDate = b.followUpDate || b.nextCheckIn || b.renewalDate || ''
+        if (!aDate && !bDate) return 0
+        if (!aDate) return 1
+        if (!bDate) return -1
+        return aDate.localeCompare(bDate)
+      })
+    case 'handoff': {
+      const handoffDate = (g: GroupViewModel) =>
+        g.fullOwnership || g.commissionEffective || g.warmHandoffDate || null
+      return sorted.sort((a, b) => {
+        const aInTransition = a.status === 'transition'
+        const bInTransition = b.status === 'transition'
+        const aDate = handoffDate(a)
+        const bDate = handoffDate(b)
+        // Transition groups with dates come first, soonest first
+        if (aDate && bDate) return aDate.localeCompare(bDate)
+        if (aDate) return -1
+        if (bDate) return 1
+        // Transition groups without dates before non-transition
+        if (aInTransition !== bInTransition) return aInTransition ? -1 : 1
+        return b.score - a.score
+      })
+    }
     case 'priority':
     default:
       return sorted.sort((a, b) => {

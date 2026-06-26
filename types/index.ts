@@ -27,7 +27,7 @@ export type ListFilter =
   | 'transition'
   | 'followup'
   | 'priority'
-export type SortOption = 'priority' | 'name' | 'renewal' | 'employees'
+export type SortOption = 'priority' | 'name' | 'renewal' | 'employees' | 'reachout-window' | 'handoff'
 
 export interface Note {
   id: string
@@ -88,6 +88,58 @@ export interface WorkflowTemplate {
   sections: TemplateSection[]
 }
 
+export interface GroupContact {
+  id: string
+  groupId: string
+  name: string
+  role: string
+  email: string
+  phone: string
+  isPrimary: boolean
+  createdAt?: string
+}
+
+export interface Reminder {
+  id: string
+  groupId: string | null
+  triggerDate: string // ISO date
+  note: string
+  completed: boolean
+  createdAt?: string
+}
+
+export interface ClaimLogEntry {
+  id: string
+  groupId: string
+  logDate: string // ISO date
+  claimsPaid: number
+  claimsFund: number
+  note: string
+  createdAt?: string
+}
+
+export interface PlanCatalogItem {
+  id: string
+  planYear: number
+  familyName: string
+  planName: string
+  sortOrder: number
+  isActive: boolean
+}
+
+export interface PlanFamily {
+  name: string
+  plans: string[]
+}
+
+export interface CheckInEntry {
+  id: string
+  groupId: string
+  checkedIn: string // ISO date
+  source: string
+  createdAt?: string
+}
+
 export interface Group {
   id: string
 
@@ -98,6 +150,7 @@ export interface Group {
   agent: string
   platform: Platform
   salesforceLink: string
+  websiteUrl: string
 
   // Renewal
   renewalMonth: string
@@ -129,8 +182,9 @@ export interface Group {
   participation: string
   plans: string
   plansOffered: string[]
+  planYear: number | null
 
-  // Contact
+  // Contact (legacy single contact — kept for compat)
   contactName: string
   contactEmail: string
   contactPhone: string
@@ -142,7 +196,7 @@ export interface Group {
   lastCheckIn: string | null
   nextCheckIn: string | null
 
-  // Follow-up
+  // Follow-up (legacy single reminder — kept for dashboard scoring compat)
   followUpDate: string | null
   followUpNote: string
 
@@ -168,6 +222,7 @@ export interface Group {
   // Relations
   workflows?: Workflow[]
   notes?: Note[]
+  contacts?: GroupContact[]
 }
 
 export interface ReachOutReason {
@@ -200,11 +255,6 @@ export interface GroupViewModel extends Group {
   hasTransitionWf: boolean
   hasRenewalWf: boolean
   renewalStartSuggest: boolean
-}
-
-export interface PlanFamily {
-  name: string
-  plans: string[]
 }
 
 export interface DashboardCounts {

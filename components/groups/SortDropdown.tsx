@@ -4,9 +4,11 @@ import type { SortOption } from '@/types'
 
 const options: { label: string; value: SortOption }[] = [
   { label: 'Priority', value: 'priority' },
-  { label: 'Name A–Z', value: 'name' },
+  { label: 'Name A-Z', value: 'name' },
   { label: 'Renewal date', value: 'renewal' },
+  { label: 'Handoff date', value: 'handoff' },
   { label: 'Employees', value: 'employees' },
+  { label: 'Reach-out window', value: 'reachout-window' },
 ]
 
 export default function SortDropdown() {

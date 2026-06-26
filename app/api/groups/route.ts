@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     priority: false,
     oeMode: 'undecided',
     plansOffered: [],
+    cadence: 'quarterly',
   })
 
   const { data, error } = await supabase

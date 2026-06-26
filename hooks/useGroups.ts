@@ -39,7 +39,12 @@ export function useUpdateGroup() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
-      }).then((r) => r.json()),
+      }).then(async (r) => {
+        let data: Record<string, unknown> | undefined
+        try { data = await r.json() } catch { /* non-JSON body */ }
+        if (!r.ok) throw new Error((data as any)?.error || `Update failed (${r.status})`)
+        return data
+      }),
     onMutate: async ({ id, patch }) => {
       await qc.cancelQueries({ queryKey: ['groups'] })
       await qc.cancelQueries({ queryKey: ['group', id] })

@@ -24,6 +24,21 @@ const NOTE_STYLES: Record<NoteType, { border: string; badge: string; text: strin
 const NOTE_TYPES: NoteType[] = ['Call', 'Email', 'Meeting', 'Note']
 const MAX_CHARS = 220
 
+const TEMPLATES = [
+  {
+    label: 'Client call notes',
+    text: 'KYC:\n\nWhy Planstin:\n\nHYS:\n\nFollow up:\n',
+  },
+  {
+    label: 'Check-in summary',
+    text: 'Discussed:\n\nChanges / staffing:\n\nAction items:\n\nNext check-in:\n',
+  },
+  {
+    label: 'Renewal discussion',
+    text: 'Plan decisions:\n\nChanges requested:\n\nTimeline confirmed:\n\nNext steps:\n',
+  },
+]
+
 function AutoTextarea({
   value,
   onChange,
@@ -71,6 +86,26 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [showTemplateMenu, setShowTemplateMenu] = useState(false)
+  const [showPostNotePrompt, setShowPostNotePrompt] = useState(false)
+  const templateMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showPostNotePrompt) return
+    const t = setTimeout(() => setShowPostNotePrompt(false), 10000)
+    return () => clearTimeout(t)
+  }, [showPostNotePrompt])
+
+  useEffect(() => {
+    if (!showTemplateMenu) return
+    function onMouseDown(e: MouseEvent) {
+      if (templateMenuRef.current && !templateMenuRef.current.contains(e.target as Node)) {
+        setShowTemplateMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [showTemplateMenu])
 
   const notes = [...(group.notes || [])].sort((a, b) =>
     (b.date || '').localeCompare(a.date || ''),
@@ -89,8 +124,10 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
 
   function handleAddNote() {
     if (!noteText.trim()) return
-    addNote.mutate({ type: noteType, text: noteText.trim() })
-    setNoteText('')
+    addNote.mutate(
+      { type: noteType, text: noteText.trim() },
+      { onSuccess: () => { setNoteText(''); setShowPostNotePrompt(true) } },
+    )
   }
 
   function startEdit(noteId: string, currentText: string) {
@@ -143,6 +180,27 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
               {NOTE_STYLES[t].icon} {t}
             </button>
           ))}
+          <div className="ml-auto relative" ref={templateMenuRef}>
+            <button
+              onClick={() => setShowTemplateMenu((v) => !v)}
+              className="text-xs px-2.5 py-1 rounded-full text-ink-faint hover:text-ink transition-colors"
+            >
+              📋 Template ▾
+            </button>
+            {showTemplateMenu && (
+              <div className="absolute right-0 top-full mt-1 z-20 bg-canvas border border-line rounded-xl shadow-lg py-1 min-w-[190px]">
+                {TEMPLATES.map((tmpl) => (
+                  <button
+                    key={tmpl.label}
+                    onClick={() => { setNoteText(tmpl.text); setShowTemplateMenu(false) }}
+                    className="w-full text-left px-3 py-2 text-xs text-ink hover:bg-canvas-subtle transition-colors"
+                  >
+                    {tmpl.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <AutoTextarea
           value={noteText}
@@ -161,6 +219,32 @@ export function NotesSection({ group, onUpdate }: NotesSectionProps) {
           </button>
         </div>
       </div>
+
+      {/* Post-note prompt */}
+      {showPostNotePrompt && (
+        <div
+          className="mb-4 flex items-center gap-3 px-4 py-2.5 rounded-xl border"
+          style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}
+        >
+          <span className="text-xs font-medium flex-1" style={{ color: '#16a34a' }}>
+            ✓ Logged — want to set a follow-up reminder?
+          </span>
+          <a
+            href="#reminders-section"
+            onClick={() => setShowPostNotePrompt(false)}
+            className="text-xs font-semibold hover:underline flex-shrink-0"
+            style={{ color: 'var(--accent)' }}
+          >
+            Add reminder
+          </a>
+          <button
+            onClick={() => setShowPostNotePrompt(false)}
+            className="text-xs text-ink-faint hover:text-ink transition-colors flex-shrink-0"
+          >
+            Done
+          </button>
+        </div>
+      )}
 
       {/* Activity feed */}
       {notes.length === 0 ? (

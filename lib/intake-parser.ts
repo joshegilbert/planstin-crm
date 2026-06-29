@@ -1,10 +1,9 @@
 import type { Group } from '@/types'
-import { guessDate, monAbbr } from './dates'
+import { guessDate, monAbbr, parseTransitionWindow, firstOfNextMonth } from './dates'
 
 type IntakePatch = Partial<Group>
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function parseIntake(raw: string, _g: Group): IntakePatch {
+export function parseIntake(raw: string, g: Group): IntakePatch {
   const lines = raw.split(/\r?\n/)
   const patch: IntakePatch = {}
 
@@ -18,7 +17,19 @@ export function parseIntake(raw: string, _g: Group): IntakePatch {
 
   let v: string | null
 
-  if ((v = grab(/transition timeline\s*[:\-–]\s*(.+)/i))) patch.transitionTimeline = v
+  if ((v = grab(/transition timeline\s*[:\-–]\s*(.+)/i))) {
+    patch.transitionTimeline = v
+    const { start, end } = parseTransitionWindow(v)
+    if (start) patch.handoffWindowStart = start
+    if (end) patch.handoffWindowEnd = end
+    // Default-fill ownership dates from the derived rule, but never clobber a value
+    // that's already set — re-pasting intake notes shouldn't overwrite a manual edit.
+    if (start) {
+      const defaultOwnership = firstOfNextMonth(start)
+      if (!g.fullOwnership) patch.fullOwnership = defaultOwnership
+      if (!g.commissionEffective) patch.commissionEffective = defaultOwnership
+    }
+  }
   if ((v = grab(/^\s*(?:gc|group contact)\s*[:\-]\s*(.+)/i))) patch.contactName = v
   if ((v = grab(/salesforce\s*link\s*[:\-]\s*(\S+)/i))) patch.salesforceLink = v
   if ((v = grab(/(?:benefits?\s*(?:enrollment)?\s*)?platform\s*[:\-]\s*(.+)/i)))

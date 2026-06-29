@@ -69,7 +69,7 @@ export function RemindersSection({ group, onUpdate }: RemindersSectionProps) {
   }
 
   return (
-    <div className="bg-canvas rounded-2xl border border-line shadow-sm p-5 mb-4">
+    <div id="reminders-section" className="bg-canvas rounded-2xl border border-line shadow-sm p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-ink text-sm">Reminders</h2>
         <button

@@ -1,5 +1,6 @@
 'use client'
 import { useGroups } from '@/hooks/useGroups'
+import { useReminders } from '@/hooks/useReminders'
 import { buildVM } from '@/lib/scoring'
 import MetricStrip from './MetricStrip'
 import ReachOutQueue from './ReachOutQueue'
@@ -8,6 +9,7 @@ import Oe90Card from './Oe90Card'
 import SnoozedSection from './SnoozedSection'
 import TimelineCard from './TimelineCard'
 import RemindersWidget from './RemindersWidget'
+import TodayPanel from './TodayPanel'
 import { fmt, todayISO } from '@/lib/dates'
 
 function getGreeting(): string {
@@ -19,6 +21,7 @@ function getGreeting(): string {
 
 export default function DashboardView() {
   const { data: rawGroups = [], isLoading } = useGroups()
+  const { data: reminders = [] } = useReminders()
 
   const vms = rawGroups.map(buildVM)
 
@@ -48,6 +51,8 @@ export default function DashboardView() {
       </p>
 
       <MetricStrip counts={counts} />
+
+      {!isLoading && <TodayPanel vms={vms} reminders={reminders} />}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-ink-faint text-sm">

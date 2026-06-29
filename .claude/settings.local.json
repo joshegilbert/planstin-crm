@@ -14,7 +14,11 @@
       "Bash(curl -s http://localhost:3000)",
       "Bash(echo \"EXIT_CODE: $?\")",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npx tsc *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(npx playwright *)"
     ]
   }
 }

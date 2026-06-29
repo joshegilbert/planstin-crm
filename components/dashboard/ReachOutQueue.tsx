@@ -69,7 +69,7 @@ export default function ReachOutQueue({ groups, loading }: ReachOutQueueProps) {
           {groups.map((g) => (
             <div
               key={g.id}
-              onClick={() => router.push(`/groups/${g.id}`)}
+              onClick={() => router.push(`/groups/${g.id}?from=dashboard`)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-canvas-subtle cursor-pointer transition-colors group"
             >
               {/* Left: name + meta */}

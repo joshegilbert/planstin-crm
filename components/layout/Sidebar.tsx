@@ -37,6 +37,7 @@ function SidebarInner() {
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Calendar', href: '/calendar' },
     { label: 'All Groups', href: '/groups' },
     { label: 'Workflows', href: '/templates' },
     { label: 'Settings', href: '/settings' },
@@ -53,6 +54,7 @@ function SidebarInner() {
 
   function isNavActive(href: string) {
     if (href === '/dashboard') return pathname === '/dashboard'
+    if (href === '/calendar') return pathname.startsWith('/calendar')
     if (href === '/groups') return pathname.startsWith('/groups')
     if (href === '/templates') return pathname.startsWith('/templates')
     if (href === '/settings') return pathname.startsWith('/settings')

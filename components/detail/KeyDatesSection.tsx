@@ -17,12 +17,13 @@ interface DateRowProps {
   label: string
   value: string | null
   onChange: (v: string | null) => void
+  historical?: boolean
 }
 
-function DateRow({ label, value, onChange }: DateRowProps) {
+function DateRow({ label, value, onChange, historical }: DateRowProps) {
   const du = daysUntil(value)
-  const overdue = du != null && du < 0
-  const soon = du != null && du >= 0 && du <= 30
+  const overdue = !historical && du != null && du < 0
+  const soon = !historical && du != null && du >= 0 && du <= 30
 
   return (
     <div>
@@ -52,10 +53,13 @@ export function KeyDatesSection({ group, onUpdate }: KeyDatesSectionProps) {
   const [editing, setEditing] = useState(false)
 
   const dateDefs = [
+    { label: 'Start date', value: group.startDate, historical: true },
     { label: 'Renewal', value: group.renewalDate },
+    { label: 'Handoff window start', value: group.handoffWindowStart },
+    { label: 'Handoff window end', value: group.handoffWindowEnd },
     { label: 'Full ownership', value: group.fullOwnership },
     { label: 'Commission effective', value: group.commissionEffective },
-    { label: 'Hand-off window', value: group.warmHandoffDate },
+    { label: 'Warm hand-off date', value: group.warmHandoffDate },
     { label: 'Intro email sent', value: group.introEmailDate },
   ]
 
@@ -71,10 +75,10 @@ export function KeyDatesSection({ group, onUpdate }: KeyDatesSectionProps) {
               <p className="text-sm text-ink-faint py-1">No dates set</p>
             ) : (
               <dl className="space-y-2">
-                {filledDates.map(({ label, value }) => {
+                {filledDates.map(({ label, value, historical }) => {
                   const du = daysUntil(value)
-                  const overdue = du != null && du < 0
-                  const soon = du != null && du >= 0 && du <= 30
+                  const overdue = !historical && du != null && du < 0
+                  const soon = !historical && du != null && du >= 0 && du <= 30
                   return (
                     <div key={label} className="flex gap-3">
                       <dt className="text-xs text-ink-faint w-36 flex-shrink-0 pt-0.5">{label}</dt>
@@ -124,9 +128,25 @@ export function KeyDatesSection({ group, onUpdate }: KeyDatesSectionProps) {
 
       <div className="space-y-4">
         <DateRow
+          label="Start date"
+          value={group.startDate}
+          onChange={(v) => onUpdate({ startDate: v })}
+          historical
+        />
+        <DateRow
           label="Renewal date"
           value={group.renewalDate}
           onChange={(v) => onUpdate({ renewalDate: v })}
+        />
+        <DateRow
+          label="Handoff window start"
+          value={group.handoffWindowStart}
+          onChange={(v) => onUpdate({ handoffWindowStart: v })}
+        />
+        <DateRow
+          label="Handoff window end"
+          value={group.handoffWindowEnd}
+          onChange={(v) => onUpdate({ handoffWindowEnd: v })}
         />
         <DateRow
           label="Full ownership"
@@ -139,7 +159,7 @@ export function KeyDatesSection({ group, onUpdate }: KeyDatesSectionProps) {
           onChange={(v) => onUpdate({ commissionEffective: v })}
         />
         <DateRow
-          label="Hand-off window"
+          label="Warm hand-off date"
           value={group.warmHandoffDate}
           onChange={(v) => onUpdate({ warmHandoffDate: v })}
         />

@@ -22,12 +22,12 @@ export default function RemindersWidget() {
     [rawGroups],
   )
 
-  // Phase 2 reminders that are active and due within 7 days
+  // Reminders coming up in the next 1-7 days (exclude today/overdue — TodayPanel owns those)
   const activeReminders = useMemo(
     () =>
       rawReminders.filter((r) => {
         const d = daysUntil(r.triggerDate)
-        return !r.completed && d != null && d <= 7
+        return !r.completed && d != null && d > 0 && d <= 7
       }),
     [rawReminders],
   )
@@ -38,12 +38,16 @@ export default function RemindersWidget() {
     [rawReminders],
   )
 
-  // Follow-up due groups not already in the reminders table
+  // Follow-up groups due in the next 1-7 days (not today/overdue — those are in TodayPanel)
   const followUpGroups = useMemo(
     () =>
       rawGroups
         .map(buildVM)
-        .filter((g) => g.followUpDue && !coveredGroupIds.has(g.id)),
+        .filter((g) => {
+          if (coveredGroupIds.has(g.id) || !g.followUpDate) return false
+          const d = daysUntil(g.followUpDate)
+          return d != null && d > 0 && d <= 7
+        }),
     [rawGroups, coveredGroupIds],
   )
 
@@ -74,7 +78,7 @@ export default function RemindersWidget() {
     <div className="bg-canvas rounded-2xl border border-line shadow-sm p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-sm text-ink">Reminders</h3>
+          <h3 className="font-semibold text-sm text-ink">Coming Up</h3>
           {items.length > 0 && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-canvas-subtle text-ink-faint font-medium">
               {items.length}
@@ -121,7 +125,7 @@ export default function RemindersWidget() {
       )}
 
       {shown.length === 0 ? (
-        <p className="text-xs text-ink-faint italic">No reminders or follow-ups due.</p>
+        <p className="text-xs text-ink-faint italic">Nothing coming up in the next 7 days.</p>
       ) : (
         <div className="space-y-1">
           {shown.map((item) => {

@@ -1,5 +1,6 @@
 'use client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import type { Group, NoteType } from '@/types'
 import { useGroup } from '@/hooks/useGroup'
 import { useUpdateGroup } from '@/hooks/useGroups'
@@ -24,8 +25,10 @@ interface GroupDetailViewProps {
   id: string
 }
 
-export function GroupDetailView({ id }: GroupDetailViewProps) {
+function GroupDetailViewInner({ id }: GroupDetailViewProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromDashboard = searchParams.get('from') === 'dashboard'
   const { data: group, isLoading, isError } = useGroup(id)
   const updateGroupMutation = useUpdateGroup()
   const { data: templates = [] } = useTemplates()
@@ -73,10 +76,10 @@ export function GroupDetailView({ id }: GroupDetailViewProps) {
     <div className="h-full overflow-y-auto bg-canvas">
       <div className="max-w-[1280px] mx-auto px-8 py-6">
         <button
-          onClick={() => router.push('/groups')}
+          onClick={() => router.push(fromDashboard ? '/dashboard' : '/groups')}
           className="flex items-center gap-1 text-sm text-ink-faint hover:text-ink transition-colors mb-5"
         >
-          All Groups
+          ← {fromDashboard ? 'Back to dashboard' : 'All Groups'}
         </button>
 
         <ErrorBoundary fallbackTitle="Header could not be displayed">
@@ -134,6 +137,18 @@ export function GroupDetailView({ id }: GroupDetailViewProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+export function GroupDetailView({ id }: GroupDetailViewProps) {
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center">
+        <div className="text-ink-faint text-sm animate-pulse">Loading...</div>
+      </div>
+    }>
+      <GroupDetailViewInner id={id} />
+    </Suspense>
   )
 }
 

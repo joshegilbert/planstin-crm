@@ -160,10 +160,15 @@ export interface Group {
   status: GroupStatus
   priority: boolean
 
+  // Background
+  startDate: string | null
+
   // Transition
   fullOwnership: string | null
   commissionEffective: string | null
   transitionTimeline: string
+  handoffWindowStart: string | null
+  handoffWindowEnd: string | null
   warmHandoff: boolean
   warmHandoffDate: string | null
   newContact: boolean

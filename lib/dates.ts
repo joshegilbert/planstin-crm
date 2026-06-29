@@ -76,6 +76,51 @@ export function guessDate(str: string | null | undefined): string | null {
   return yr + '-' + String(mo).padStart(2, '0') + '-' + String(da).padStart(2, '0')
 }
 
+function buildISO(yr: number, mo: number, da: number): string {
+  return yr + '-' + String(mo).padStart(2, '0') + '-' + String(da).padStart(2, '0')
+}
+
+// Parses a freeform handoff-window string like "6/24-7/1" or "8/8 – 8/14" into real
+// ISO start/end dates. These are one-time onboarding windows for the current year, not
+// recurring annual dates, so the year is never rolled forward based on "is it already past" —
+// an overdue window should stay anchored to this year, not get silently pushed to next year.
+export function parseTransitionWindow(str: string | null | undefined): { start: string | null; end: string | null } {
+  if (!str || !str.trim()) return { start: null, end: null }
+
+  const parts = str.split(/\s*[-–—]\s*/).map((p) => p.trim()).filter(Boolean)
+  if (parts.length === 0 || parts.length > 2) return { start: null, end: null }
+
+  const rawStart = parts[0]
+  const rawEnd = parts.length === 2 ? parts[1] : parts[0]
+
+  const tokenRe = /^(\d{1,2})\/(\d{1,2})$/
+  const ms = rawStart.match(tokenRe)
+  const me = rawEnd.match(tokenRe)
+  if (!ms || !me) return { start: null, end: null }
+
+  const yr = today().getFullYear()
+  const start = buildISO(yr, Number(ms[1]), Number(ms[2]))
+  let end = buildISO(yr, Number(me[1]), Number(me[2]))
+
+  if (end < start) end = buildISO(yr + 1, Number(me[1]), Number(me[2]))
+
+  return { start, end }
+}
+
+// Implements the observed handoff rule: full ownership / commission effective always land
+// on the 1st of the month following the window's start month.
+export function firstOfNextMonth(iso: string): string {
+  const d = parseISO(iso)
+  if (!d) return iso
+  let yr = d.getFullYear()
+  let mo = d.getMonth() + 2 // getMonth() is 0-indexed; +1 for next month, +1 to convert to 1-indexed
+  if (mo > 12) {
+    mo -= 12
+    yr += 1
+  }
+  return buildISO(yr, mo, 1)
+}
+
 export function monAbbr(iso: string | null | undefined): string {
   const d = parseISO(iso)
   if (!d) return ''

@@ -39,7 +39,7 @@ const TEMPLATES = [
   },
 ]
 
-function AutoTextarea({
+export function AutoTextarea({
   value,
   onChange,
   placeholder,

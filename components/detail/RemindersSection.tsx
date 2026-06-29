@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { Group } from '@/types'
 import { fmt, daysUntil, todayISO } from '@/lib/dates'
 import { useReminders, useAddReminder, useDeleteReminder, useUpdateReminder } from '@/hooks/useReminders'
+import { ReminderForm } from '@/components/reminders/ReminderForm'
 
 interface RemindersSectionProps {
   group: Group
@@ -19,6 +20,7 @@ export function RemindersSection({ group, onUpdate }: RemindersSectionProps) {
   const [newNote, setNewNote] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   function getEarliestActiveDate(exclude?: string): string | null {
     return (
@@ -68,6 +70,21 @@ export function RemindersSection({ group, onUpdate }: RemindersSectionProps) {
     )
   }
 
+  function handleEditSave(id: string, patch: { triggerDate: string; note: string }) {
+    updateReminder.mutate(
+      { id, patch },
+      {
+        onSuccess: () => {
+          // Editing a reminder's date can change which reminder is earliest — re-sync the
+          // group's legacy followUpDate the same way add/delete/complete already do.
+          const earliest = [...reminders.filter((r) => !r.completed && r.id !== id).map((r) => r.triggerDate), patch.triggerDate].sort()[0] ?? null
+          onUpdate({ followUpDate: earliest })
+          setEditingId(null)
+        },
+      },
+    )
+  }
+
   return (
     <div id="reminders-section" className="bg-canvas rounded-2xl border border-line shadow-sm p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
@@ -84,6 +101,23 @@ export function RemindersSection({ group, onUpdate }: RemindersSectionProps) {
       {reminders.length > 0 && (
         <div className="space-y-2 mb-3">
           {reminders.map((r) => {
+            if (editingId === r.id) {
+              return (
+                <ReminderForm
+                  key={r.id}
+                  mode="edit"
+                  initialDate={r.triggerDate}
+                  initialNote={r.note}
+                  initialGroupId={group.id}
+                  groups={[{ id: group.id, groupName: group.groupName }]}
+                  groupLocked
+                  saving={updateReminder.isPending}
+                  onSave={(patch) => handleEditSave(r.id, { triggerDate: patch.triggerDate, note: patch.note })}
+                  onCancel={() => setEditingId(null)}
+                />
+              )
+            }
+
             const du = daysUntil(r.triggerDate)
             const overdue = du != null && du < 0
             const dueToday = du === 0
@@ -98,7 +132,7 @@ export function RemindersSection({ group, onUpdate }: RemindersSectionProps) {
             return (
               <div
                 key={r.id}
-                className="flex items-start gap-3 p-2.5 rounded-xl border border-line bg-canvas-subtle"
+                className="flex items-start gap-3 p-2.5 rounded-xl border border-line bg-canvas-subtle group"
               >
                 <button
                   onClick={() => handleComplete(r.id, r.completed)}
@@ -136,12 +170,20 @@ export function RemindersSection({ group, onUpdate }: RemindersSectionProps) {
                       <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-ink-faint hover:text-ink">No</button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => setConfirmDeleteId(r.id)}
-                      className="text-xs text-ink-faint hover:text-red-500 transition-colors"
-                    >
-                      ×
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setEditingId(r.id)}
+                        className="text-xs text-ink-faint hover:text-ink transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(r.id)}
+                        className="text-xs text-ink-faint hover:text-red-500 transition-colors"
+                      >
+                        ×
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { useReminders, useAddReminder, useUpdateReminder } from '@/hooks/useRemi
 import { useGroups } from '@/hooks/useGroups'
 import { buildVM } from '@/lib/scoring'
 import { fmt, daysUntil } from '@/lib/dates'
+import { ReminderForm } from '@/components/reminders/ReminderForm'
 
 export default function RemindersWidget() {
   const { data: rawReminders = [] } = useReminders()
@@ -16,6 +17,7 @@ export default function RemindersWidget() {
   const [showAdd, setShowAdd] = useState(false)
   const [newDate, setNewDate] = useState('')
   const [newNote, setNewNote] = useState('')
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null)
 
   const groupNames = useMemo(
     () => Object.fromEntries(rawGroups.map((g) => [g.id, g.groupName])),
@@ -131,6 +133,29 @@ export default function RemindersWidget() {
           {shown.map((item) => {
             if (item.kind === 'reminder') {
               const { r } = item
+
+              if (editingReminderId === r.id) {
+                return (
+                  <ReminderForm
+                    key={r.id}
+                    mode="edit"
+                    initialDate={r.triggerDate}
+                    initialNote={r.note}
+                    initialGroupId={r.groupId}
+                    groupLocked
+                    groups={rawGroups.map((g) => ({ id: g.id, groupName: g.groupName }))}
+                    saving={updateReminder.isPending}
+                    onSave={(patch) =>
+                      updateReminder.mutate(
+                        { id: r.id, patch: { triggerDate: patch.triggerDate, note: patch.note } },
+                        { onSuccess: () => setEditingReminderId(null) },
+                      )
+                    }
+                    onCancel={() => setEditingReminderId(null)}
+                  />
+                )
+              }
+
               const d = daysUntil(r.triggerDate)
               const overdue = d != null && d < 0
               const isToday = d === 0
@@ -146,7 +171,7 @@ export default function RemindersWidget() {
               return (
                 <div
                   key={r.id}
-                  className="flex items-start justify-between gap-2 py-1.5 px-2 rounded-lg hover:bg-canvas-subtle transition-colors"
+                  className="flex items-start justify-between gap-2 py-1.5 px-2 rounded-lg hover:bg-canvas-subtle transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
                     {r.groupId ? (
@@ -166,13 +191,21 @@ export default function RemindersWidget() {
                       {isToday && ' · today'}
                     </p>
                   </div>
-                  <button
-                    onClick={() => updateReminder.mutate({ id: r.id, patch: { completed: true } })}
-                    className="text-[10px] text-ink-faint hover:text-ink transition-colors flex-shrink-0 mt-0.5"
-                    title="Mark complete"
-                  >
-                    Done
-                  </button>
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                    <button
+                      onClick={() => setEditingReminderId(r.id)}
+                      className="text-[10px] text-ink-faint hover:text-ink transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => updateReminder.mutate({ id: r.id, patch: { completed: true } })}
+                      className="text-[10px] text-ink-faint hover:text-ink transition-colors"
+                      title="Mark complete"
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               )
             }

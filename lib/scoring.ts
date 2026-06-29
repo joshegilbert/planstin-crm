@@ -1,7 +1,7 @@
 import type { Group, GroupViewModel, ReachOutReason, OeWindow } from '@/types'
 import { daysUntil, fmt, isoMinus } from './dates'
 
-function oeWindow(g: Group): OeWindow {
+export function oeWindow(g: Group): OeWindow {
   const oeAnchor = g.oeStartDate || g.renewalDate
   const oeDays = daysUntil(oeAnchor)
   const oeEndDays = daysUntil(g.oeEndDate)

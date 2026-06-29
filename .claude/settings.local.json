@@ -18,7 +18,40 @@
       "Bash(npx tsc *)",
       "Skill(run)",
       "Skill(run:*)",
-      "Bash(npx playwright *)"
+      "Bash(npx playwright *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3002/calendar)",
+      "Bash(rm -f /Users/joshgilbert/.npm/_npx/361ceb562f3b3235/verify-phase1*.mjs)",
+      "Bash(npx next *)",
+      "Bash(pkill -f \"next dev -p 3002\")",
+      "Bash(lsof -ti:3002)",
+      "Bash(disown)",
+      "Bash(grep -n \"id: \\\\`rem-\" /Users/joshgilbert/dev/PlanstinCRM/components/calendar/CalendarView.tsx)",
+      "Bash(grep -n \"week.map\\(\\({ date, currentMonth\" /Users/joshgilbert/dev/PlanstinCRM/components/calendar/CalendarView.tsx)",
+      "Bash(curl -s http://localhost:3002/api/reminders)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -X DELETE http://localhost:3002/api/reminders/rem_1782706406179)",
+      "Bash(curl -s \"http://localhost:3002/api/reminders?groupId=g57\")",
+      "Bash(curl -s \"http://localhost:3002/api/groups/g57\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('followUpDate:', d.get\\('followUpDate'\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('oeEndDate:', d.get\\('oeEndDate'\\)\\); print\\('oeStartDate:', d.get\\('oeStartDate'\\)\\)\")",
+      "Bash(curl -s -X PATCH http://localhost:3002/api/groups/g57 -H \"Content-Type: application/json\" -d '{\"oeEndDate\": null}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:3002/api/reminders -H \"Content-Type: application/json\" -d '{\"groupId\": null, \"triggerDate\": \"2026-07-19\", \"note\": \"Phase3 agenda-edit target\"}')",
+      "Bash(pkill -f \"next dev -p 3002\" 2>&1; sleep 1 *)",
+      "Bash(curl -s \"http://localhost:3002/api/groups\")",
+      "Bash(curl -s -X PATCH \"http://localhost:3002/api/groups/g_new_1782700621614\" -H \"Content-Type: application/json\" -d '{\"oeStartDate\": \"2026-08-01\"}')",
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\).get\\('oeStartDate'\\)\\)\")",
+      "Bash(curl -s \"http://localhost:3002/api/dashboard\")",
+      "Bash(curl -s -X PATCH \"http://localhost:3002/api/groups/g_new_1782700621614\" -H \"Content-Type: application/json\" -d '{\"oeStartDate\": null}')",
+      "Bash(python3 -c \"import json,sys; print\\('oeStartDate:', json.load\\(sys.stdin\\).get\\('oeStartDate'\\)\\)\")",
+      "Bash(rm -f /Users/joshgilbert/.npm/_npx/361ceb562f3b3235/verify-4*.mjs *)",
+      "Bash(npm test *)",
+      "Bash(curl -s -X DELETE \"http://localhost:3002/api/groups/g_new_1782708564116\")",
+      "Bash(rm -f /Users/joshgilbert/.npm/_npx/361ceb562f3b3235/verify-5*.mjs *)",
+      "Bash(python3 -c \"import json,sys; print\\(json.load\\(sys.stdin\\).get\\('platform'\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/joshgilbert/.npm/_npx/361ceb562f3b3235"
     ]
   }
 }

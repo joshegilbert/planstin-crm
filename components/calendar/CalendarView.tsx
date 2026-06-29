@@ -2,10 +2,11 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGroups } from '@/hooks/useGroups'
-import { useReminders } from '@/hooks/useReminders'
+import { useReminders, useAddReminder, useUpdateReminder } from '@/hooks/useReminders'
 import { daysUntil, todayISO, isoMinus, fmt } from '@/lib/dates'
 import type { Group, Reminder } from '@/types'
 import AgendaView from './AgendaView'
+import { ReminderForm } from '@/components/reminders/ReminderForm'
 
 export type CalEventType =
   | 'renewal'
@@ -23,6 +24,7 @@ export interface CalEvent {
   type: CalEventType
   label: string
   detail?: string
+  reminderId?: string // set only for type: 'reminder' — the raw Reminder.id, avoids parsing the `rem-${id}` composite event id
 }
 
 export const EVENT_META: Record<CalEventType, { color: string; bg: string; textColor: string; label: string; order: number }> = {
@@ -106,6 +108,7 @@ function buildEventMap(groups: Group[], reminders: Reminder[]): Map<string, CalE
         date: r.triggerDate,
         type: 'reminder',
         label: r.note || (r.groupId ? 'Group reminder' : 'Personal reminder'),
+        reminderId: r.id,
       })
     }
   }
@@ -115,6 +118,45 @@ function buildEventMap(groups: Group[], reminders: Reminder[]): Map<string, CalE
   }
 
   return map
+}
+
+// "Derived" event types are auto-computed date fields on a Group — commission/ownership in
+// particular are very often the same date (one is derived from the other at intake time), so
+// without merging, the same company shows up as two separate-looking cards on the same day.
+// Reminders are deliberately excluded: a reminder's label is freeform user-authored text, not
+// the company name, so it's never redundant with a derived event even on a shared day.
+export const MERGEABLE_TYPES: ReadonlySet<CalEventType> = new Set([
+  'renewal', 'follow-up', 'check-in', 'handoff', 'commission', 'ownership',
+])
+
+export interface MergedCalEvent {
+  key: string
+  date: string
+  groupId?: string
+  label: string
+  events: CalEvent[] // 1 for unmerged/reminder events, 2+ for merged derived events
+}
+
+// Expects events already scoped to a single day (true at both current call sites) — the
+// merge key only needs groupId, not groupId+date, since date is constant across the input.
+export function mergeCalEvents(events: CalEvent[]): MergedCalEvent[] {
+  const merged: MergedCalEvent[] = []
+  const indexByKey = new Map<string, number>()
+
+  for (const ev of events) {
+    const isMergeable = MERGEABLE_TYPES.has(ev.type) && !!ev.groupId
+    const key = isMergeable ? `group-${ev.groupId}` : ev.id
+
+    if (isMergeable && indexByKey.has(key)) {
+      merged[indexByKey.get(key)!].events.push(ev)
+      continue
+    }
+
+    indexByKey.set(key, merged.length)
+    merged.push({ key, date: ev.date, groupId: ev.groupId, label: ev.label, events: [ev] })
+  }
+
+  return merged
 }
 
 // Maps each date in the current month view to the count of groups whose window (as returned
@@ -311,73 +353,58 @@ function getWeekDays(anchorISO: string): string[] {
   return days
 }
 
-interface ActiveRowProps {
-  color: string
-  label: string
-  groups: Group[]
-  expanded: boolean
-  onToggle: () => void
-  renderChip: (g: Group) => React.ReactNode
-}
-
-function ActiveRow({ color, label, groups, expanded, onToggle, renderChip }: ActiveRowProps) {
-  const visible = expanded ? groups : groups.slice(0, 4)
-  return (
-    <div className="flex items-start gap-3 mb-2.5">
-      <div className="flex items-center gap-1.5 w-32 flex-shrink-0 pt-0.5">
-        <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-        <span className="text-xs font-semibold text-ink-faint">{label}</span>
-        <span className="text-xs text-ink-faint">({groups.length})</span>
-      </div>
-      <div className="flex flex-wrap gap-2 flex-1">
-        {visible.map(renderChip)}
-        {groups.length > 4 && (
-          <button
-            onClick={onToggle}
-            className="text-xs px-3 py-1.5 rounded-full text-ink-faint hover:text-ink transition-colors"
-            style={{ background: 'var(--surface-2)' }}
-          >
-            {expanded ? 'Show less' : `+${groups.length - 4} more`}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export default function CalendarView() {
   const router = useRouter()
   const { data: groups = [], isLoading } = useGroups()
   const { data: reminders = [] } = useReminders()
+  const addReminder = useAddReminder()
+  const updateReminder = useUpdateReminder()
   const todayStr = todayISO()
   const todayDate = new Date(todayStr + 'T00:00:00')
 
   const [year, setYear] = useState(todayDate.getFullYear())
   const [month, setMonth] = useState(todayDate.getMonth())
   const [selectedDay, setSelectedDay] = useState<string>(todayStr)
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
-  const toggleRow = (key: string) => setExpandedRows((s) => ({ ...s, [key]: !s[key] }))
   const [openBanner, setOpenBanner] = useState<{ banner: WeekBanner; top: number; left: number; maxHeight: number } | null>(null)
   const [viewMode, setViewMode] = useState<'month' | 'agenda'>('month')
+  const [reminderPopover, setReminderPopover] = useState<{
+    mode: 'create' | 'edit'
+    reminder?: Reminder
+    date: string
+    top: number
+    left: number
+    maxHeight: number
+  } | null>(null)
 
-  function handleBannerClick(e: React.MouseEvent<HTMLButtonElement>, banner: WeekBanner) {
-    const rect = e.currentTarget.getBoundingClientRect()
+  function clampPopoverPosition(rect: DOMRect) {
     const POPOVER_WIDTH = 288
     const VIEWPORT_MARGIN = 16
     const maxHeight = Math.min(400, window.innerHeight - VIEWPORT_MARGIN * 2)
-    setOpenBanner({
-      banner,
-      // Clamp so the popover always fits fully within the viewport — it's `position: fixed`,
-      // so anything past the viewport edge can't be reached by scrolling the page.
+    return {
       top: Math.max(VIEWPORT_MARGIN, Math.min(rect.bottom + 6, window.innerHeight - maxHeight - VIEWPORT_MARGIN)),
       left: Math.max(VIEWPORT_MARGIN, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN)),
       maxHeight,
-    })
+    }
+  }
+
+  function handleBannerClick(e: React.MouseEvent<HTMLButtonElement>, banner: WeekBanner) {
+    setOpenBanner({ banner, ...clampPopoverPosition(e.currentTarget.getBoundingClientRect()) })
+  }
+
+  function handleAddReminderClick(e: React.MouseEvent<HTMLButtonElement>, date: string) {
+    e.stopPropagation()
+    setReminderPopover({ mode: 'create', date, ...clampPopoverPosition(e.currentTarget.getBoundingClientRect()) })
+  }
+
+  function handleEditReminderClick(e: React.MouseEvent<HTMLButtonElement>, reminder: Reminder) {
+    e.stopPropagation()
+    setReminderPopover({ mode: 'edit', reminder, date: reminder.triggerDate, ...clampPopoverPosition(e.currentTarget.getBoundingClientRect()) })
   }
 
   const eventMap = useMemo(() => buildEventMap(groups, reminders), [groups, reminders])
   const calDays = useMemo(() => getCalDays(year, month), [year, month])
   const selectedEvents = useMemo(() => eventMap.get(selectedDay) ?? [], [eventMap, selectedDay])
+  const selectedMergedEvents = useMemo(() => mergeCalEvents(selectedEvents), [selectedEvents])
   const thisWeekDays = useMemo(() => getWeekDays(todayStr), [todayStr])
   const oeRangeMap = useMemo(
     () => buildRangeMap(groups, calDays, (g) => ({ start: g.oeStartDate, end: g.oeEndDate })),
@@ -390,23 +417,6 @@ export default function CalendarView() {
     for (let i = 0; i < calDays.length; i += 7) out.push(calDays.slice(i, i + 7))
     return out
   }, [calDays])
-
-  // Active processes — groups currently in the middle of OE, transition, or renewal window
-  const activeProcesses = useMemo(() => {
-    const oeActive = groups.filter((g) => {
-      if (!g.oeStartDate) return false
-      if (!g.oeEndDate) return todayStr >= g.oeStartDate
-      return todayStr >= g.oeStartDate && todayStr <= g.oeEndDate
-    })
-    const inTransition = groups.filter((g) => g.status === 'transition' && !g.changeCompleted)
-    const renewalWindow = groups
-      .filter((g) => {
-        const d = daysUntil(g.renewalDate)
-        return d != null && d >= 0 && d <= 90
-      })
-      .sort((a, b) => (daysUntil(a.renewalDate) ?? 999) - (daysUntil(b.renewalDate) ?? 999))
-    return { oeActive, inTransition, renewalWindow }
-  }, [groups, todayStr])
 
   // Groups whose window includes the selected day, scoped per category — replaces the old
   // blanket "every transition-status group, on every day" list with real date scoping.
@@ -433,11 +443,6 @@ export default function CalendarView() {
       ),
     [groups, selectedDay],
   )
-
-  const hasActiveProcesses =
-    activeProcesses.oeActive.length > 0 ||
-    activeProcesses.inTransition.length > 0 ||
-    activeProcesses.renewalWindow.length > 0
 
   function prevMonth() {
     if (month === 0) { setYear((y) => y - 1); setMonth(11) }
@@ -525,99 +530,6 @@ export default function CalendarView() {
         ))}
       </div>
 
-      {/* Active Processes Panel */}
-      {hasActiveProcesses && (
-        <div className="bg-canvas rounded-2xl border border-line shadow-sm p-4 mb-5">
-          <div className="text-xs font-semibold uppercase tracking-widest text-ink-faint mb-3">
-            Active Right Now
-          </div>
-
-          {/* OE Active */}
-          {activeProcesses.oeActive.length > 0 && (
-            <ActiveRow
-              color="#ea580c"
-              label="OE Open"
-              groups={activeProcesses.oeActive}
-              expanded={!!expandedRows.oe}
-              onToggle={() => toggleRow('oe')}
-              renderChip={(g) => {
-                const d = daysUntil(g.oeEndDate)
-                const sub = d != null ? (d === 0 ? 'closes today' : d < 0 ? 'OE ended' : `closes in ${d}d`) : 'no end date'
-                return (
-                  <button
-                    key={g.id}
-                    onClick={() => router.push(`/groups/${g.id}?from=calendar`)}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-colors hover:opacity-80"
-                    style={{ background: '#fff7ed', color: '#9a3412', border: '1px solid #fed7aa' }}
-                  >
-                    {g.groupName}
-                    <span className="opacity-70">— {sub}</span>
-                  </button>
-                )
-              }}
-            />
-          )}
-
-          {/* In Transition — shrunk to a summary line. The grid itself now shows handoff
-              windows as banners day-by-day, so a full chip wall here would just duplicate
-              that. Overdue count still surfaced so it's never silently hidden. */}
-          {activeProcesses.inTransition.length > 0 && (
-            <div className="flex items-center gap-3 mb-2.5">
-              <div className="flex items-center gap-1.5 w-32 flex-shrink-0">
-                <span className="w-2 h-2 rounded-full" style={{ background: '#0891b2' }} />
-                <span className="text-xs font-semibold text-ink-faint">Transition</span>
-              </div>
-              <div className="flex-1 flex items-center gap-2 text-xs text-ink-faint">
-                <span>
-                  {activeProcesses.inTransition.length} group{activeProcesses.inTransition.length !== 1 ? 's' : ''} in a handoff window
-                  {(() => {
-                    const overdueCount = activeProcesses.inTransition.filter(isOverdueTransition).length
-                    return overdueCount > 0 ? (
-                      <span className="font-medium" style={{ color: 'oklch(0.47 0.16 30)' }}>
-                        {' '}· {overdueCount} overdue
-                      </span>
-                    ) : null
-                  })()}
-                </span>
-                <button
-                  onClick={() => router.push('/groups?filter=transition')}
-                  className="font-medium hover:underline"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  View all →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Renewal Window */}
-          {activeProcesses.renewalWindow.length > 0 && (
-            <ActiveRow
-              color="#dc2626"
-              label="Renewal ≤90d"
-              groups={activeProcesses.renewalWindow}
-              expanded={!!expandedRows.renewal}
-              onToggle={() => toggleRow('renewal')}
-              renderChip={(g) => {
-                const d = daysUntil(g.renewalDate)
-                const sub = d != null ? (d === 0 ? 'renews today' : `in ${d}d`) : ''
-                return (
-                  <button
-                    key={g.id}
-                    onClick={() => router.push(`/groups/${g.id}?from=calendar`)}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-colors hover:opacity-80"
-                    style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' }}
-                  >
-                    {g.groupName}
-                    {sub && <span className="opacity-70">— {sub}</span>}
-                  </button>
-                )
-              }}
-            />
-          )}
-        </div>
-      )}
-
       {/* This Week strip */}
       <div className="mb-5">
         <div className="text-xs font-semibold uppercase tracking-widest text-ink-faint mb-2">
@@ -626,6 +538,7 @@ export default function CalendarView() {
         <div className="grid grid-cols-7 gap-2">
           {thisWeekDays.map((dayISO) => {
             const events = eventMap.get(dayISO) ?? []
+            const merged = mergeCalEvents(events)
             const isToday = dayISO === todayStr
             const isSelected = dayISO === selectedDay
             const isPast = dayISO < todayStr
@@ -660,31 +573,31 @@ export default function CalendarView() {
                   {parseInt(dd, 10)}
                 </div>
                 <div className="mt-1.5 flex justify-center gap-px flex-wrap">
-                  {events.length === 0 && oeCount === 0 ? (
+                  {merged.length === 0 && oeCount === 0 ? (
                     <span className="text-[9px] text-ink-faint">—</span>
                   ) : (
                     <>
                       {oeCount > 0 && (
                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#ea580c' }} title="OE active" />
                       )}
-                      {events.slice(0, 3).map((ev) => (
+                      {merged.slice(0, 3).map((m) => (
                         <span
-                          key={ev.id}
+                          key={m.key}
                           className="w-1.5 h-1.5 rounded-full"
-                          style={{ background: EVENT_META[ev.type].color }}
-                          title={EVENT_META[ev.type].label}
+                          style={{ background: EVENT_META[m.events[0].type].color }}
+                          title={m.events.map((ev) => EVENT_META[ev.type].label).join(' + ')}
                         />
                       ))}
-                      {events.length > 3 && (
-                        <span className="text-[9px] text-ink-faint">+{events.length - 3}</span>
+                      {merged.length > 3 && (
+                        <span className="text-[9px] text-ink-faint">+{merged.length - 3}</span>
                       )}
                     </>
                   )}
                 </div>
-                {(events.length > 0 || oeCount > 0) && (
+                {(merged.length > 0 || oeCount > 0) && (
                   <div className="text-[10px] text-ink-faint mt-0.5">
-                    {events.length + (oeCount > 0 ? 0 : 0)} event{events.length !== 1 ? 's' : ''}
-                    {oeCount > 0 && events.length === 0 ? `${oeCount} in OE` : ''}
+                    {merged.length + (oeCount > 0 ? 0 : 0)} event{merged.length !== 1 ? 's' : ''}
+                    {oeCount > 0 && merged.length === 0 ? `${oeCount} in OE` : ''}
                   </div>
                 )}
               </button>
@@ -695,7 +608,7 @@ export default function CalendarView() {
 
       {/* Agenda view — rolling chronological list, alternative to the month grid */}
       {viewMode === 'agenda' && (
-        <AgendaView eventMap={eventMap} transitionWindows={transitionWindows} oeWindows={oeWindows} anchorDay={selectedDay} />
+        <AgendaView eventMap={eventMap} transitionWindows={transitionWindows} oeWindows={oeWindows} anchorDay={selectedDay} reminders={reminders} />
       )}
 
       {/* Two-column: calendar + day detail */}
@@ -726,26 +639,42 @@ export default function CalendarView() {
                 <div key={weekIdx} className="relative grid grid-cols-7 gap-px bg-line">
                   {week.map(({ date, currentMonth }) => {
                     const events = eventMap.get(date) ?? []
+                    const mergedEvents = mergeCalEvents(events)
                     const isToday = date === todayStr
                     const isSelected = date === selectedDay
                     const dayNum = parseInt(date.split('-')[2], 10)
 
                     return (
-                      <button
+                      <div
                         key={date}
-                        onClick={() => setSelectedDay(date)}
                         className={[
-                          'bg-canvas min-h-[92px] p-1.5 text-left flex flex-col transition-colors relative',
+                          'bg-canvas min-h-[92px] p-1.5 flex flex-col transition-colors relative group',
                           !currentMonth ? 'opacity-30' : '',
                           isSelected && !isToday ? 'ring-2 ring-inset ring-accent' : '',
                           currentMonth && !isSelected ? 'hover:bg-canvas-subtle' : '',
                           isSelected ? 'bg-canvas-subtle' : '',
                         ].join(' ')}
                       >
+                        <button
+                          onClick={() => setSelectedDay(date)}
+                          className="absolute inset-0 text-left"
+                          aria-label={`Select ${date}`}
+                        />
+                        {currentMonth && (
+                          <button
+                            onClick={(e) => handleAddReminderClick(e, date)}
+                            className="absolute top-1 right-1 z-10 w-5 h-5 rounded-full text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-canvas-subtle"
+                            style={{ color: 'var(--accent)' }}
+                            title="Add reminder"
+                            aria-label={`Add reminder on ${date}`}
+                          >
+                            +
+                          </button>
+                        )}
                         {/* Date number */}
                         <div
                           className={[
-                            'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0',
+                            'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1 flex-shrink-0 relative pointer-events-none',
                             isToday ? 'text-white' : currentMonth ? 'text-ink' : 'text-ink-faint',
                           ].join(' ')}
                           style={isToday ? { background: 'var(--accent)' } : {}}
@@ -755,32 +684,33 @@ export default function CalendarView() {
 
                         {/* Event chips — pushed down to leave room for handoff-window banners */}
                         <div
-                          className="flex-1 space-y-0.5 min-h-0 overflow-hidden"
+                          className="flex-1 space-y-0.5 min-h-0 overflow-hidden relative pointer-events-none"
                           style={{ marginTop: laneCount * LANE_HEIGHT }}
                         >
-                          {events.slice(0, 3).map((ev) => {
-                            const meta = EVENT_META[ev.type]
+                          {mergedEvents.slice(0, 3).map((m) => {
+                            const meta = EVENT_META[m.events[0].type]
+                            const title = m.events.map((ev) => EVENT_META[ev.type].label).join(' + ') + ': ' + m.label
                             return (
                               <div
-                                key={ev.id}
+                                key={m.key}
                                 className="flex items-center gap-1 rounded px-1 py-px overflow-hidden"
                                 style={{ background: meta.bg }}
-                                title={`${meta.label}: ${ev.label}`}
+                                title={title}
                               >
                                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: meta.color }} />
                                 <span className="text-[9px] leading-tight truncate font-medium" style={{ color: meta.textColor }}>
-                                  {ev.label}
+                                  {m.label}
                                 </span>
                               </div>
                             )
                           })}
-                          {events.length > 3 && (
+                          {mergedEvents.length > 3 && (
                             <div className="text-[9px] text-ink-faint px-1 font-medium">
-                              +{events.length - 3} more
+                              +{mergedEvents.length - 3} more
                             </div>
                           )}
                         </div>
-                      </button>
+                      </div>
                     )
                   })}
 
@@ -826,23 +756,31 @@ export default function CalendarView() {
         <div className="w-72 flex-shrink-0 bg-canvas border border-line rounded-2xl shadow-sm overflow-hidden sticky top-4">
           {/* Day header */}
           <div className="px-4 pt-4 pb-3 border-b border-line">
-            <div className="font-semibold text-sm text-ink">{fmtDayLabel(selectedDay)}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="font-semibold text-sm text-ink">{fmtDayLabel(selectedDay)}</div>
+              <button
+                onClick={(e) => handleAddReminderClick(e, selectedDay)}
+                className="text-xs text-accent hover:underline flex-shrink-0"
+              >
+                + Add
+              </button>
+            </div>
             {selectedDay === todayStr && (
               <div className="text-xs font-medium mt-0.5" style={{ color: 'var(--accent)' }}>
                 Today
               </div>
             )}
             <div className="text-xs text-ink-faint mt-0.5">
-              {selectedEvents.length === 0 && selectedDayOE.length === 0
+              {selectedMergedEvents.length === 0 && selectedDayOE.length === 0
                 ? 'Nothing scheduled'
-                : `${selectedEvents.length} event${selectedEvents.length !== 1 ? 's' : ''}`}
+                : `${selectedMergedEvents.length} event${selectedMergedEvents.length !== 1 ? 's' : ''}`}
             </div>
           </div>
 
           {/* Event list + active processes */}
           <div className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
             {/* Scheduled events */}
-            {selectedEvents.length === 0 &&
+            {selectedMergedEvents.length === 0 &&
             selectedDayOE.length === 0 &&
             selectedDayTransition.length === 0 &&
             selectedDayRenewal.length === 0 ? (
@@ -851,30 +789,56 @@ export default function CalendarView() {
               </p>
             ) : (
               <>
-                {selectedEvents.map((ev) => {
-                  const meta = EVENT_META[ev.type]
+                {selectedMergedEvents.map((m) => {
+                  const primaryMeta = EVENT_META[m.events[0].type]
+                  const detail = m.events.find((ev) => ev.detail)?.detail
+                  const isReminder = m.events.length === 1 && m.events[0].type === 'reminder'
                   return (
                     <div
-                      key={ev.id}
-                      className="rounded-xl p-3 border border-line"
-                      style={{ borderLeftWidth: 3, borderLeftColor: meta.color, background: meta.bg }}
+                      key={m.key}
+                      className="rounded-xl p-3 border border-line group"
+                      style={{ borderLeftWidth: 3, borderLeftColor: primaryMeta.color, background: primaryMeta.bg }}
                     >
-                      <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: meta.color }}>
-                        {meta.label}
-                      </div>
-                      {ev.groupId ? (
+                      {m.events.length === 1 ? (
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: primaryMeta.color }}>
+                            {primaryMeta.label}
+                          </div>
+                          {isReminder && (
+                            <button
+                              onClick={(e) => handleEditReminderClick(e, reminders.find((r) => r.id === m.events[0].reminderId)!)}
+                              className="text-[10px] text-ink-faint hover:text-ink transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          {m.events.map((ev) => (
+                            <span
+                              key={ev.type}
+                              className="text-[10px] font-bold uppercase tracking-wider"
+                              style={{ color: EVENT_META[ev.type].color }}
+                            >
+                              ● {EVENT_META[ev.type].label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {m.groupId ? (
                         <button
-                          onClick={() => router.push(`/groups/${ev.groupId}?from=calendar`)}
+                          onClick={() => router.push(`/groups/${m.groupId}?from=calendar`)}
                           className="text-sm font-semibold text-left w-full truncate block hover:underline"
                           style={{ color: 'var(--accent)' }}
                         >
-                          {ev.label}
+                          {m.label}
                         </button>
                       ) : (
-                        <div className="text-sm font-semibold text-ink truncate">{ev.label}</div>
+                        <div className="text-sm font-semibold text-ink truncate">{m.label}</div>
                       )}
-                      {ev.detail && (
-                        <div className="text-xs text-ink-faint mt-1 leading-relaxed">{ev.detail}</div>
+                      {detail && (
+                        <div className="text-xs text-ink-faint mt-1 leading-relaxed">{detail}</div>
                       )}
                     </div>
                   )
@@ -883,7 +847,7 @@ export default function CalendarView() {
                 {/* Active on this day: OE windows */}
                 {selectedDayOE.length > 0 && (
                   <div>
-                    {(selectedEvents.length > 0) && (
+                    {(selectedMergedEvents.length > 0) && (
                       <div className="border-t border-line my-3" />
                     )}
                     <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#ea580c' }}>
@@ -911,7 +875,7 @@ export default function CalendarView() {
                 {/* In handoff window on this day */}
                 {selectedDayTransition.length > 0 && (
                   <div>
-                    {(selectedEvents.length > 0 || selectedDayOE.length > 0) && (
+                    {(selectedMergedEvents.length > 0 || selectedDayOE.length > 0) && (
                       <div className="border-t border-line my-3" />
                     )}
                     <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#0891b2' }}>
@@ -942,7 +906,7 @@ export default function CalendarView() {
                 {/* In the 90-day renewal reach-out window on this day */}
                 {selectedDayRenewal.length > 0 && (
                   <div>
-                    {(selectedEvents.length > 0 || selectedDayOE.length > 0 || selectedDayTransition.length > 0) && (
+                    {(selectedMergedEvents.length > 0 || selectedDayOE.length > 0 || selectedDayTransition.length > 0) && (
                       <div className="border-t border-line my-3" />
                     )}
                     <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: '#dc2626' }}>
@@ -1034,6 +998,38 @@ export default function CalendarView() {
                 )
               })}
             </div>
+          </div>
+        </>
+      )}
+
+      {/* Add/edit reminder popover — same viewport-clamped pattern as the banner popover above */}
+      {reminderPopover && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setReminderPopover(null)} />
+          <div
+            className="fixed z-50 w-72"
+            style={{ top: reminderPopover.top, left: reminderPopover.left, maxHeight: reminderPopover.maxHeight }}
+          >
+            <ReminderForm
+              mode={reminderPopover.mode}
+              initialDate={reminderPopover.mode === 'edit' ? reminderPopover.reminder!.triggerDate : reminderPopover.date}
+              initialNote={reminderPopover.mode === 'edit' ? reminderPopover.reminder!.note : ''}
+              initialGroupId={reminderPopover.mode === 'edit' ? reminderPopover.reminder!.groupId : null}
+              groupLocked={reminderPopover.mode === 'edit'}
+              groups={groups.map((g) => ({ id: g.id, groupName: g.groupName }))}
+              saving={addReminder.isPending || updateReminder.isPending}
+              onSave={(patch) => {
+                if (reminderPopover.mode === 'create') {
+                  addReminder.mutate(patch, { onSuccess: () => setReminderPopover(null) })
+                } else {
+                  updateReminder.mutate(
+                    { id: reminderPopover.reminder!.id, patch: { triggerDate: patch.triggerDate, note: patch.note } },
+                    { onSuccess: () => setReminderPopover(null) },
+                  )
+                }
+              }}
+              onCancel={() => setReminderPopover(null)}
+            />
           </div>
         </>
       )}

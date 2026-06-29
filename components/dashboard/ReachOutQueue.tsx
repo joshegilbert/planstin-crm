@@ -35,9 +35,13 @@ const dueToneText: Record<string, string> = {
   neutral: 'text-ink-faint',
 }
 
+const MAX = 6
+
 export default function ReachOutQueue({ groups, loading }: ReachOutQueueProps) {
   const router = useRouter()
   const updateGroup = useUpdateGroup()
+  const shown = groups.slice(0, MAX)
+  const extra = groups.length - MAX
 
   function handleSnooze(e: React.MouseEvent, id: string) {
     e.stopPropagation()
@@ -66,7 +70,7 @@ export default function ReachOutQueue({ groups, loading }: ReachOutQueueProps) {
         </div>
       ) : (
         <div className="space-y-1">
-          {groups.map((g) => (
+          {shown.map((g) => (
             <div
               key={g.id}
               onClick={() => router.push(`/groups/${g.id}?from=dashboard`)}
@@ -114,6 +118,14 @@ export default function ReachOutQueue({ groups, loading }: ReachOutQueueProps) {
               </div>
             </div>
           ))}
+          {extra > 0 && (
+            <button
+              onClick={() => router.push('/groups?filter=reachout')}
+              className="text-xs text-accent hover:underline pt-1 px-3"
+            >
+              View all →
+            </button>
+          )}
         </div>
       )}
     </div>

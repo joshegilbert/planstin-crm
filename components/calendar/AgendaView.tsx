@@ -1,10 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Group } from '@/types'
-import { fmt, isoPlus, daysUntil } from '@/lib/dates'
+import type { Group, Reminder } from '@/types'
+import { fmt, isoPlus, daysUntil, mondayOfWeek } from '@/lib/dates'
+import { useUpdateReminder } from '@/hooks/useReminders'
+import { ReminderForm } from '@/components/reminders/ReminderForm'
 import {
   EVENT_META,
+  MERGEABLE_TYPES,
   isOverdueTransition,
   getTransitionStep,
   type CalEvent,
@@ -18,6 +21,7 @@ interface AgendaViewProps {
   transitionWindows: WindowGroup[]
   oeWindows: WindowGroup[]
   anchorDay: string
+  reminders: Reminder[]
 }
 
 const ROLL_DAYS = 30
@@ -41,6 +45,7 @@ interface AgendaItem {
   groupId?: string
   window?: WindowGroup
   windowKind?: BannerKind
+  reminderId?: string
 }
 
 const WINDOW_META: Record<BannerKind, { color: string; label: string }> = {
@@ -50,6 +55,37 @@ const WINDOW_META: Record<BannerKind, { color: string; label: string }> = {
 
 function metaFor(item: Pick<AgendaItem, 'type' | 'windowKind'>) {
   return item.type === 'window' ? WINDOW_META[item.windowKind!] : EVENT_META[item.type]
+}
+
+interface MergedAgendaItem {
+  key: string
+  label: string
+  groupId?: string
+  items: AgendaItem[] // window items are always length 1 — windows represent many groups, not one
+}
+
+// Same-company same-day derived events (commission/ownership/etc.) collapse into one row with
+// multiple type badges instead of appearing once per type-grouped section below. Mirrors
+// CalendarView's mergeCalEvents — items here are already scoped to a single day, so the merge
+// key only needs groupId.
+function mergeAgendaItems(items: AgendaItem[]): MergedAgendaItem[] {
+  const merged: MergedAgendaItem[] = []
+  const indexByKey = new Map<string, number>()
+
+  for (const item of items) {
+    const isMergeable = item.type !== 'window' && MERGEABLE_TYPES.has(item.type) && !!item.groupId
+    const key = isMergeable ? `group-${item.groupId}` : item.id
+
+    if (isMergeable && indexByKey.has(key)) {
+      merged[indexByKey.get(key)!].items.push(item)
+      continue
+    }
+
+    indexByKey.set(key, merged.length)
+    merged.push({ key, label: item.label, groupId: item.groupId, items: [item] })
+  }
+
+  return merged
 }
 
 // Rolling N days from anchorDay, each with its point events plus one entry per window
@@ -67,7 +103,7 @@ function buildAgendaDays(
   oeWindows: WindowGroup[],
   anchorDay: string,
   numDays: number,
-): Array<{ date: string; items: AgendaItem[] }> {
+): Array<{ date: string; items: AgendaItem[]; weekStart: string }> {
   const allWindows: Array<{ window: WindowGroup; kind: BannerKind }> = [
     ...transitionWindows.map((w) => ({ window: w, kind: 'transition' as const })),
     ...oeWindows.map((w) => ({ window: w, kind: 'oe' as const })),
@@ -80,7 +116,7 @@ function buildAgendaDays(
   }
   const ongoingAsOfAnchor = allWindows.filter((e) => e.window.start <= anchorDay && e.window.end >= anchorDay)
 
-  const days: Array<{ date: string; items: AgendaItem[] }> = []
+  const days: Array<{ date: string; items: AgendaItem[]; weekStart: string }> = []
   for (let i = 0; i < numDays; i++) {
     const date = isoPlus(anchorDay, i)
     if (!date) continue
@@ -91,6 +127,7 @@ function buildAgendaDays(
       label: ev.label,
       detail: ev.detail,
       groupId: ev.groupId,
+      reminderId: ev.reminderId,
     }))
 
     const windowEntries = i === 0 ? ongoingAsOfAnchor : windowsByStart.get(date) ?? []
@@ -105,15 +142,17 @@ function buildAgendaDays(
       })
     }
 
-    if (items.length > 0) days.push({ date, items })
+    if (items.length > 0) days.push({ date, items, weekStart: mondayOfWeek(date) })
   }
   return days
 }
 
-export default function AgendaView({ eventMap, transitionWindows, oeWindows, anchorDay }: AgendaViewProps) {
+export default function AgendaView({ eventMap, transitionWindows, oeWindows, anchorDay, reminders }: AgendaViewProps) {
   const router = useRouter()
+  const updateReminder = useUpdateReminder()
   const [numDays, setNumDays] = useState(ROLL_DAYS)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [editingReminderKey, setEditingReminderKey] = useState<string | null>(null)
 
   const days = buildAgendaDays(eventMap, transitionWindows, oeWindows, anchorDay, numDays)
 
@@ -125,24 +164,77 @@ export default function AgendaView({ eventMap, transitionWindows, oeWindows, anc
     router.push(`/groups/${id}?from=calendar`)
   }
 
-  function renderItem(item: AgendaItem) {
-    const meta = metaFor(item)
+  function renderMergedItem(m: MergedAgendaItem) {
+    const item = m.items[0]
     const isWindow = item.type === 'window'
+    const isReminder = item.type === 'reminder'
     const windowKey = `win-${item.id}`
     const windowExpanded = !!expanded[windowKey]
+    const detail = m.items.find((i) => i.detail)?.detail
+
+    if (isReminder && editingReminderKey === m.key) {
+      const reminder = reminders.find((r) => r.id === item.reminderId)
+      if (reminder) {
+        return (
+          <div key={m.key} className="px-3 py-1">
+            <ReminderForm
+              mode="edit"
+              initialDate={reminder.triggerDate}
+              initialNote={reminder.note}
+              groupLocked
+              saving={updateReminder.isPending}
+              onSave={(patch) =>
+                updateReminder.mutate(
+                  { id: reminder.id, patch: { triggerDate: patch.triggerDate, note: patch.note } },
+                  { onSuccess: () => setEditingReminderKey(null) },
+                )
+              }
+              onCancel={() => setEditingReminderKey(null)}
+            />
+          </div>
+        )
+      }
+    }
 
     return (
-      <div key={item.id} className="rounded-lg overflow-hidden">
+      <div key={m.key} className="rounded-lg overflow-hidden group">
         <button
-          onClick={() => (isWindow ? toggle(windowKey) : item.groupId && goToGroup(item.groupId))}
+          onClick={() => (isWindow ? toggle(windowKey) : m.groupId && goToGroup(m.groupId))}
           className="w-full flex items-center gap-2 text-left px-3 py-2 hover:bg-canvas-subtle transition-colors"
         >
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: meta.color }} />
-          <span className="text-xs font-semibold uppercase tracking-wide flex-shrink-0" style={{ color: meta.color }}>
-            {meta.label}
-          </span>
-          <span className="text-sm text-ink truncate">{item.label}</span>
-          {item.detail && <span className="text-xs text-ink-faint truncate">{item.detail}</span>}
+          {m.items.length === 1 ? (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: metaFor(item).color }} />
+              <span className="text-xs font-semibold uppercase tracking-wide flex-shrink-0" style={{ color: metaFor(item).color }}>
+                {metaFor(item).label}
+              </span>
+            </>
+          ) : (
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              {m.items.map((i) => (
+                <span
+                  key={i.type}
+                  className="text-xs font-semibold uppercase tracking-wide"
+                  style={{ color: metaFor(i).color }}
+                >
+                  ● {metaFor(i).label}
+                </span>
+              ))}
+            </span>
+          )}
+          <span className="text-sm text-ink truncate">{m.label}</span>
+          {detail && <span className="text-xs text-ink-faint truncate">{detail}</span>}
+          {isReminder && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); setEditingReminderKey(m.key) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); setEditingReminderKey(m.key) } }}
+              className="ml-auto text-xs text-ink-faint hover:text-ink transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+            >
+              Edit
+            </span>
+          )}
           {isWindow && (
             <span className="ml-auto text-xs text-ink-faint flex-shrink-0">{windowExpanded ? '▾' : '▸'}</span>
           )}
@@ -194,45 +286,60 @@ export default function AgendaView({ eventMap, transitionWindows, oeWindows, anc
         </p>
       ) : (
         <div className="divide-y divide-line">
-          {days.map(({ date, items }) => {
-            const dense = items.length > DENSE_THRESHOLD
-            const groupedByType = dense
-              ? items.reduce<Record<string, AgendaItem[]>>((acc, item) => {
-                  ;(acc[item.type] ??= []).push(item)
-                  return acc
-                }, {})
-              : null
+          {(() => {
+            let lastWeekStart: string | null = null
+            return days.map(({ date, items, weekStart }) => {
+              const merged = mergeAgendaItems(items)
+              const dense = merged.length > DENSE_THRESHOLD
+              const groupedByType = dense
+                ? merged.reduce<Record<string, MergedAgendaItem[]>>((acc, m) => {
+                    const type = m.items[0].type
+                    ;(acc[type] ??= []).push(m)
+                    return acc
+                  }, {})
+                : null
 
-            return (
-              <div key={date} className="px-4 py-3">
-                <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint mb-2">
-                  {fmtAgendaDay(date)}
-                </div>
-                <div className="space-y-1">
-                  {groupedByType
-                    ? Object.entries(groupedByType).map(([type, typeItems]) => {
-                        const groupKey = `${date}-${type}`
-                        const typeExpanded = !!expanded[groupKey]
-                        const visible = typeExpanded ? typeItems : typeItems.slice(0, 4)
-                        return (
-                          <div key={type}>
-                            {visible.map(renderItem)}
-                            {typeItems.length > 4 && (
-                              <button
-                                onClick={() => toggle(groupKey)}
-                                className="text-xs text-ink-faint hover:text-ink px-3 py-1 transition-colors"
-                              >
-                                {typeExpanded ? 'Show less' : `Show ${typeItems.length - 4} more ${metaFor(typeItems[0]).label}`}
-                              </button>
-                            )}
-                          </div>
-                        )
-                      })
-                    : items.map(renderItem)}
-                </div>
-              </div>
-            )
-          })}
+              const showWeekDivider = weekStart !== lastWeekStart
+              lastWeekStart = weekStart
+
+              return (
+                <Fragment key={date}>
+                  {showWeekDivider && (
+                    <div className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint bg-canvas-subtle">
+                      Week of {fmt(weekStart)} – {fmt(isoPlus(weekStart, 6))}
+                    </div>
+                  )}
+                  <div className="px-4 py-3">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-ink-faint mb-2">
+                      {fmtAgendaDay(date)}
+                    </div>
+                    <div className="space-y-1">
+                      {groupedByType
+                        ? Object.entries(groupedByType).map(([type, typeItems]) => {
+                            const groupKey = `${date}-${type}`
+                            const typeExpanded = !!expanded[groupKey]
+                            const visible = typeExpanded ? typeItems : typeItems.slice(0, 4)
+                            return (
+                              <div key={type}>
+                                {visible.map(renderMergedItem)}
+                                {typeItems.length > 4 && (
+                                  <button
+                                    onClick={() => toggle(groupKey)}
+                                    className="text-xs text-ink-faint hover:text-ink px-3 py-1 transition-colors"
+                                  >
+                                    {typeExpanded ? 'Show less' : `Show ${typeItems.length - 4} more ${metaFor(typeItems[0].items[0]).label}`}
+                                  </button>
+                                )}
+                              </div>
+                            )
+                          })
+                        : merged.map(renderMergedItem)}
+                    </div>
+                  </div>
+                </Fragment>
+              )
+            })
+          })()}
         </div>
       )}
       <div className="px-4 py-3 border-t border-line text-center">

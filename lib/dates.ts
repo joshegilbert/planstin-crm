@@ -152,3 +152,15 @@ export function isoPlus(iso: string | null | undefined, days: number): string | 
     String(d.getDate()).padStart(2, '0')
   )
 }
+
+// Monday-aligned week start — distinct from CalendarView's Sunday-aligned getWeekDays (which
+// mirrors the Sun-Sat month-grid columns; a different, unrelated need). Agenda's week dividers
+// use the conventional Mon-Sun business week instead.
+export function mondayOfWeek(iso: string): string {
+  const d = parseISO(iso)
+  if (!d) return iso
+  const dow = d.getDay() // 0 = Sun, 1 = Mon, ...
+  const diff = dow === 0 ? -6 : 1 - dow
+  d.setDate(d.getDate() + diff)
+  return buildISO(d.getFullYear(), d.getMonth() + 1, d.getDate())
+}

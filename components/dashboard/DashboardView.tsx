@@ -4,10 +4,8 @@ import { useReminders } from '@/hooks/useReminders'
 import { buildVM } from '@/lib/scoring'
 import MetricStrip from './MetricStrip'
 import ReachOutQueue from './ReachOutQueue'
-import OeNowCard from './OeNowCard'
-import Oe90Card from './Oe90Card'
+import OeCard from './OeCard'
 import SnoozedSection from './SnoozedSection'
-import TimelineCard from './TimelineCard'
 import RemindersWidget from './RemindersWidget'
 import TodayPanel from './TodayPanel'
 import { fmt, todayISO } from '@/lib/dates'
@@ -28,7 +26,6 @@ export default function DashboardView() {
   const reachOut = vms
     .filter((g) => g.score > 0 && !g.snoozed)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 12)
 
   const oeNow = vms.filter((g) => g.oeWindow === 'now')
   const oe90 = vms.filter((g) => g.oeWindow === 'soon')
@@ -69,12 +66,9 @@ export default function DashboardView() {
             {/* Right: cards */}
             <div className="w-80 flex-shrink-0 space-y-4">
               <RemindersWidget />
-              <OeNowCard groups={oeNow} />
-              <Oe90Card groups={oe90} />
+              <OeCard nowGroups={oeNow} soonGroups={oe90} />
             </div>
           </div>
-
-          <TimelineCard groups={vms} />
 
           <SnoozedSection groups={snoozed} />
         </>

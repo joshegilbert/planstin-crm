@@ -77,7 +77,7 @@ function SidebarInner() {
       {/* Logo */}
       <div className="px-5 pt-6 pb-5">
         <div className="text-lg font-semibold leading-tight" style={{ color: '#fff' }}>
-          Planstin CRM
+          Sideline Ops
         </div>
         <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
           Account Manager

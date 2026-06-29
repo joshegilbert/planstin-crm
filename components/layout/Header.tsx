@@ -16,7 +16,7 @@ function getViewInfo(pathname: string): { title: string; subtitle: string } {
   if (pathname.startsWith('/groups')) return { title: 'All Groups', subtitle: 'Your full book of business' }
   if (pathname.startsWith('/templates')) return { title: 'Workflows', subtitle: 'Templates & active workflows' }
   if (pathname.startsWith('/settings')) return { title: 'Settings', subtitle: 'Plan catalog & preferences' }
-  return { title: 'Planstin CRM', subtitle: '' }
+  return { title: 'Sideline Ops', subtitle: '' }
 }
 
 export default function Header() {

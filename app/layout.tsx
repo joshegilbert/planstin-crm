@@ -17,7 +17,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Planstin CRM',
+  title: 'Sideline Ops',
   description: 'Benefits Account Manager CRM',
 }
 
